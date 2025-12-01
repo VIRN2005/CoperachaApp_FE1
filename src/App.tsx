@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
-import { Web3AuthProvider } from './components/Web3AuthProvider';
-import { LoginScreen } from './components/LoginScreen';
-import { Dashboard } from './components/Dashboard';
+import { Web3AuthProvider } from "./components/Web3AuthProvider";
+import { LoginScreen } from "./components/LoginScreen";
+import { Dashboard } from "./components/Dashboard";
+import { useAccount } from "wagmi";
 
 export default function App() {
   return (
@@ -12,14 +12,14 @@ export default function App() {
 }
 
 function AppContent() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { isConnected } = useAccount();
 
   return (
     <div className="min-h-screen bg-white">
-      {!isAuthenticated ? (
-        <LoginScreen onLogin={() => setIsAuthenticated(true)} />
+      {!isConnected ? (
+        <LoginScreen onLogin={() => {}} />
       ) : (
-        <Dashboard onLogout={() => setIsAuthenticated(false)} />
+        <Dashboard onLogout={() => {}} />
       )}
     </div>
   );

@@ -1,51 +1,46 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+"use client";
 
-interface Web3AuthContextType {
-  userAddress: string | null;
-  balance: string;
-  login: () => Promise<void>;
-  logout: () => void;
-  isConnected: boolean;
-}
+import { ReactNode } from "react";
+import { WagmiProvider, createConfig, http } from "wagmi";
+import { mainnet, sepolia, hardhat, localhost } from "wagmi/chains";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { RainbowKitProvider, getDefaultConfig } from "@rainbow-me/rainbowkit";
+import "@rainbow-me/rainbowkit/styles.css";
 
-const Web3AuthContext = createContext<Web3AuthContextType | undefined>(undefined);
+// Configuración de wagmi con RainbowKit
+const config = getDefaultConfig({
+  appName: "Coperacha App",
+  projectId: import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || "demo_project_id",
+  chains: [sepolia, hardhat, localhost, mainnet],
+  ssr: false,
+});
+
+const queryClient = new QueryClient();
 
 export function Web3AuthProvider({ children }: { children: ReactNode }) {
-  const [userAddress, setUserAddress] = useState<string | null>(null);
-  const [balance, setBalance] = useState('0');
-  const [isConnected, setIsConnected] = useState(false);
-
-  const login = async () => {
-    // Simulación de Web3Auth login
-    // En producción, aquí iría la integración real con Web3Auth
-    try {
-      // Mock wallet address
-      const mockAddress = '0x' + Math.random().toString(16).substr(2, 40);
-      setUserAddress(mockAddress);
-      setBalance('2.5');
-      setIsConnected(true);
-    } catch (error) {
-      console.error('Error connecting wallet:', error);
-    }
-  };
-
-  const logout = () => {
-    setUserAddress(null);
-    setBalance('0');
-    setIsConnected(false);
-  };
-
   return (
-    <Web3AuthContext.Provider value={{ userAddress, balance, login, logout, isConnected }}>
-      {children}
-    </Web3AuthContext.Provider>
+    <WagmiProvider config={config}>
+      <QueryClientProvider client={queryClient}>
+        <RainbowKitProvider>{children}</RainbowKitProvider>
+      </QueryClientProvider>
+    </WagmiProvider>
   );
 }
 
+// Hook de compatibilidad para no romper código existente
 export function useWeb3Auth() {
-  const context = useContext(Web3AuthContext);
-  if (!context) {
-    throw new Error('useWeb3Auth must be used within Web3AuthProvider');
-  }
-  return context;
+  // Este hook ya no se necesita, usar directamente:
+  // - useAccount() para address y isConnected
+  // - useBalance() para balance
+  // - useDisconnect() para logout
+  console.warn(
+    "useWeb3Auth is deprecated. Use wagmi hooks directly: useAccount, useBalance, useDisconnect"
+  );
+  return {
+    userAddress: null,
+    balance: "0",
+    login: async () => {},
+    logout: () => {},
+    isConnected: false,
+  };
 }

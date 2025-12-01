@@ -1,17 +1,31 @@
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Button } from './ui/button';
-import { Wallet, ArrowDownToLine, ArrowUpFromLine, Sparkles, TrendingUp } from 'lucide-react';
-import { useWeb3Auth } from './Web3AuthProvider';
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { Button } from "./ui/button";
+import {
+  Wallet,
+  ArrowDownToLine,
+  ArrowUpFromLine,
+  Sparkles,
+  TrendingUp,
+} from "lucide-react";
+import { useAccount, useBalance } from "wagmi";
+import { formatEther } from "viem";
 
 export function PersonalWallet() {
-  const { balance } = useWeb3Auth();
+  const { address } = useAccount();
+  const { data: balanceData } = useBalance({
+    address: address,
+  });
+
+  const balanceInEth = balanceData
+    ? parseFloat(formatEther(balanceData.value))
+    : 0;
 
   return (
     <div className="relative">
       <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-emerald-500 rounded-3xl blur-xl opacity-20"></div>
       <Card className="relative border-0 bg-white/80 backdrop-blur-xl shadow-2xl shadow-blue-500/20 rounded-3xl overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 to-emerald-600/10"></div>
-        
+
         <CardHeader className="relative">
           <CardTitle className="flex items-center gap-2 text-gray-900">
             <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-emerald-500 rounded-xl flex items-center justify-center shadow-lg">
@@ -26,16 +40,18 @@ export function PersonalWallet() {
             </div>
           </CardTitle>
         </CardHeader>
-        
+
         <CardContent className="relative space-y-6">
           <div className="p-6 bg-gradient-to-br from-blue-500 to-emerald-500 rounded-2xl shadow-xl">
             <p className="text-sm font-semibold text-blue-100 mb-2 flex items-center gap-2">
               <TrendingUp className="w-4 h-4" />
               Balance Disponible
             </p>
-            <p className="text-4xl font-bold text-white mb-2">{balance} ETH</p>
+            <p className="text-4xl font-bold text-white mb-2">
+              {balanceInEth.toFixed(4)} ETH
+            </p>
             <p className="text-sm font-semibold text-blue-100">
-              ≈ ${(parseFloat(balance) * 2400).toFixed(2)} USD
+              ≈ ${(balanceInEth * 2400).toFixed(2)} USD
             </p>
           </div>
 

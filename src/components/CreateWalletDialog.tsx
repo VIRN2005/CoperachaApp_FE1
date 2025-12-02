@@ -116,22 +116,7 @@ export function CreateWalletDialog({}: CreateWalletDialogProps) {
       id: "create-tx",
     });
 
-    createCoperacha(name, allMembers as `0x${string}`[])
-      .then((txHash) => {
-        console.log("Transacción enviada:", txHash);
-        toast.loading("Esperando confirmación...", {
-          id: "create-tx",
-          description: "La transacción se está procesando",
-        });
-      })
-      .catch((err: any) => {
-        console.error("Error:", err);
-        toast.error("Error al crear Coperacha", {
-          id: "create-tx",
-          description:
-            err?.message || err?.shortMessage || "Transacción rechazada",
-        });
-      });
+    createCoperacha(name, allMembers as `0x${string}`[]);
   };
 
   return (

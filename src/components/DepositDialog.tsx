@@ -18,9 +18,10 @@ import { useEthPrice, formatEthToUSD } from "../hooks/useEthPrice";
 
 interface DepositDialogProps {
   vaultAddress: Address;
+  onSuccess?: () => void;
 }
 
-export function DepositDialog({ vaultAddress }: DepositDialogProps) {
+export function DepositDialog({ vaultAddress, onSuccess }: DepositDialogProps) {
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState("");
   const ethPrice = useEthPrice();
@@ -47,13 +48,17 @@ export function DepositDialog({ vaultAddress }: DepositDialogProps) {
       });
       setAmount("");
       setOpen(false);
+      // Refrescar datos del padre
+      if (onSuccess) {
+        onSuccess();
+      }
     } else if (error) {
       toast.error("Error al depositar", {
         id: "deposit-tx",
         description: error?.message || "Transacción rechazada",
       });
     }
-  }, [isPending, isConfirming, isSuccess, error, amount]);
+  }, [isPending, isConfirming, isSuccess, error, amount, onSuccess]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

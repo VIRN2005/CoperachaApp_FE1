@@ -33,12 +33,24 @@ export function WalletDetail({ vaultAddress, onBack }: WalletDetailProps) {
   const ethPrice = useEthPrice();
 
   // Obtener datos del contrato
-  const { data: vaultInfo, isLoading: isLoadingInfo } =
-    useCoperachaInfo(vaultAddress);
-  const { data: balance, isLoading: isLoadingBalance } =
-    useCoperachaBalance(vaultAddress);
+  const {
+    data: vaultInfo,
+    isLoading: isLoadingInfo,
+    refetch: refetchInfo,
+  } = useCoperachaInfo(vaultAddress);
+  const {
+    data: balance,
+    isLoading: isLoadingBalance,
+    refetch: refetchBalance,
+  } = useCoperachaBalance(vaultAddress);
   const { data: members, isLoading: isLoadingMembers } =
     useCoperachaMembers(vaultAddress);
+
+  // Función para refrescar todos los datos
+  const refreshData = () => {
+    refetchInfo();
+    refetchBalance();
+  };
 
   // Loading state
   if (isLoadingInfo || isLoadingBalance || isLoadingMembers) {
@@ -86,9 +98,6 @@ export function WalletDetail({ vaultAddress, onBack }: WalletDetailProps) {
     ][idx % 5],
   }));
 
-  // TODO: Obtener propuestas activas para el contador
-  const activeProposalsCount = 0;
-
   return (
     <div className="max-w-7xl mx-auto px-6 py-8">
       {/* Back Button */}
@@ -113,10 +122,14 @@ export function WalletDetail({ vaultAddress, onBack }: WalletDetailProps) {
             </p>
           </div>
           <div className="flex gap-3">
-            <DepositDialog vaultAddress={vaultAddress} />
+            <DepositDialog
+              vaultAddress={vaultAddress}
+              onSuccess={refreshData}
+            />
             <CreateProposalDialog
               vaultAddress={vaultAddress}
               members={formattedMembers}
+              onSuccess={refreshData}
             />
           </div>
         </div>
@@ -183,7 +196,7 @@ export function WalletDetail({ vaultAddress, onBack }: WalletDetailProps) {
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-semibold text-gray-600 flex items-center gap-2">
                   <Activity className="w-4 h-4" />
-                  Propuestas Activas
+                  Propuestas
                 </CardTitle>
               </CardHeader>
               <CardContent>

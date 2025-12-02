@@ -26,11 +26,13 @@ interface Member {
 interface CreateProposalDialogProps {
   vaultAddress: Address;
   members: Member[];
+  onSuccess?: () => void;
 }
 
 export function CreateProposalDialog({
   vaultAddress,
   members,
+  onSuccess,
 }: CreateProposalDialogProps) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
@@ -64,13 +66,17 @@ export function CreateProposalDialog({
       setAmount("");
       setRecipient("");
       setOpen(false);
+      // Refrescar datos del padre
+      if (onSuccess) {
+        onSuccess();
+      }
     } else if (error) {
       toast.error("Error al crear propuesta", {
         id: "proposal-tx",
         description: error?.message || "Transacción rechazada",
       });
     }
-  }, [isPending, isConfirming, isSuccess, error, title]);
+  }, [isPending, isConfirming, isSuccess, error, title, onSuccess]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

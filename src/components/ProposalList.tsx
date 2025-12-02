@@ -22,6 +22,8 @@ import { ProposalStatus } from "../contracts/addresses";
 import { toast } from "sonner";
 import { useEthPrice, formatEthToUSD } from "../hooks/useEthPrice";
 
+export type ProposalFilter = "all" | "pending" | "executed" | "rejected";
+
 interface ProposalListProps {
   vaultAddress: Address;
   proposalCount: number;
@@ -44,10 +46,12 @@ function ProposalItem({
   vaultAddress,
   proposalId,
   requiredVotes,
+  filter,
 }: {
   vaultAddress: Address;
   proposalId: number;
   requiredVotes: number;
+  filter: ProposalFilter;
 }) {
   const { address: userAddress } = useAccount();
   const ethPrice = useEthPrice();
@@ -117,6 +121,17 @@ function ProposalItem({
   const isApproved = status === ProposalStatus.EXECUTED;
   const isRejected = status === ProposalStatus.REJECTED;
   const progress = (votesForNum / requiredVotes) * 100;
+
+  // Aplicar filtro
+  const shouldShow =
+    filter === "all" ||
+    (filter === "pending" && isActive) ||
+    (filter === "executed" && isApproved) ||
+    (filter === "rejected" && isRejected);
+
+  if (!shouldShow) {
+    return null;
+  }
 
   const handleVote = (inFavor: boolean) => {
     vote(vaultAddress, Number(id), inFavor);
@@ -294,6 +309,8 @@ export function ProposalList({
   proposalCount,
   requiredVotes,
 }: ProposalListProps) {
+  const [filter, setFilter] = useState<ProposalFilter>("pending");
+
   if (proposalCount === 0) {
     return (
       <div className="text-center py-20">
@@ -310,16 +327,77 @@ export function ProposalList({
     );
   }
 
+  const proposals = Array.from({ length: proposalCount }, (_, i) => i).map(
+    (proposalId) => (
+      <ProposalItem
+        key={proposalId}
+        vaultAddress={vaultAddress}
+        proposalId={proposalId}
+        requiredVotes={requiredVotes}
+        filter={filter}
+      />
+    )
+  );
+
   return (
     <div className="space-y-6">
-      {Array.from({ length: proposalCount }, (_, i) => i).map((proposalId) => (
-        <ProposalItem
-          key={proposalId}
-          vaultAddress={vaultAddress}
-          proposalId={proposalId}
-          requiredVotes={requiredVotes}
-        />
-      ))}
+      {/* Filtros */}
+      <div className="flex gap-2 p-1 bg-gray-100 rounded-xl w-fit">
+        <Button
+          variant={filter === "all" ? "default" : "ghost"}
+          size="sm"
+          onClick={() => setFilter("all")}
+          className={`rounded-lg ${
+            filter === "all"
+              ? "bg-gradient-to-r from-blue-600 to-emerald-600 text-white"
+              : "text-gray-600 hover:text-gray-900"
+          }`}
+        >
+          Todas
+        </Button>
+        <Button
+          variant={filter === "pending" ? "default" : "ghost"}
+          size="sm"
+          onClick={() => setFilter("pending")}
+          className={`rounded-lg ${
+            filter === "pending"
+              ? "bg-gradient-to-r from-blue-600 to-cyan-600 text-white"
+              : "text-gray-600 hover:text-gray-900"
+          }`}
+        >
+          <Clock className="w-4 h-4 mr-1" />
+          Activas
+        </Button>
+        <Button
+          variant={filter === "executed" ? "default" : "ghost"}
+          size="sm"
+          onClick={() => setFilter("executed")}
+          className={`rounded-lg ${
+            filter === "executed"
+              ? "bg-gradient-to-r from-green-600 to-emerald-600 text-white"
+              : "text-gray-600 hover:text-gray-900"
+          }`}
+        >
+          <CheckCircle className="w-4 h-4 mr-1" />
+          Ejecutadas
+        </Button>
+        <Button
+          variant={filter === "rejected" ? "default" : "ghost"}
+          size="sm"
+          onClick={() => setFilter("rejected")}
+          className={`rounded-lg ${
+            filter === "rejected"
+              ? "bg-gradient-to-r from-red-600 to-pink-600 text-white"
+              : "text-gray-600 hover:text-gray-900"
+          }`}
+        >
+          <XCircle className="w-4 h-4 mr-1" />
+          Rechazadas
+        </Button>
+      </div>
+
+      {/* Lista de propuestas */}
+      {proposals}
     </div>
   );
 }

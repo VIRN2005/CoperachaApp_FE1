@@ -196,8 +196,8 @@ export function CreateProposalDialog({
             <div className="bg-gradient-to-r from-blue-50 to-emerald-50 border border-blue-200 rounded-xl p-4">
               <p className="text-sm text-blue-900">
                 <strong>Importante:</strong> Esta propuesta requerirá{" "}
-                {Math.ceil(members.length / 2)} votos a favor para ser aprobada
-                y ejecutada automáticamente.
+                {Math.floor(members.length / 2) + 1} votos a favor para ser
+                aprobada y ejecutada automáticamente.
               </p>
             </div>
           </div>

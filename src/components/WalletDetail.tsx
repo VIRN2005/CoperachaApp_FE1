@@ -71,7 +71,7 @@ export function WalletDetail({ vaultAddress, onBack }: WalletDetailProps) {
   const balanceInEth = balance ? formatEther(balance) : "0";
   const memberList = members || [];
   const proposalCount = Number(proposalCounter);
-  const requiredVotes = Math.ceil(memberList.length / 2);
+  const requiredVotes = Math.floor(memberList.length / 2) + 1;
 
   // Convertir miembros a formato para CreateProposalDialog
   const formattedMembers = memberList.map((addr, idx) => ({

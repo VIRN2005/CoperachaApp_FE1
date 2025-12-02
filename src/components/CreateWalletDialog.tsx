@@ -65,6 +65,14 @@ export function CreateWalletDialog({}: CreateWalletDialogProps) {
       return;
     }
 
+    // Validar si es la dirección del usuario
+    if (userAddress && address.toLowerCase() === userAddress.toLowerCase()) {
+      toast.error("No puedes agregarte a ti mismo", {
+        description: "Tu wallet ya está incluida automáticamente",
+      });
+      return;
+    }
+
     if (members.includes(address)) {
       toast.error("Miembro duplicado", {
         description: "Esta dirección ya fue agregada",
@@ -135,14 +143,21 @@ export function CreateWalletDialog({}: CreateWalletDialogProps) {
           <Sparkles className="w-4 h-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl bg-white/95 backdrop-blur-xl border-0 shadow-2xl rounded-3xl">
+      <DialogContent className="max-w-3xl bg-white/95 backdrop-blur-xl border-0 shadow-2xl rounded-3xl overflow-visible">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-emerald-600 bg-clip-text text-transparent">
             Crear Billetera Comunitaria
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
-          <div className="space-y-6 py-6">
+          <div
+            className="space-y-6 custom-scrollbar"
+            style={{
+              maxHeight: "450px",
+              overflowY: "auto",
+              padding: "24px 8px 24px 4px",
+            }}
+          >
             <div className="space-y-2">
               <Label htmlFor="name" className="text-gray-700">
                 Nombre de la billetera
@@ -172,7 +187,10 @@ export function CreateWalletDialog({}: CreateWalletDialogProps) {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-gray-700">Miembros (mínimo 2)</Label>
+              <Label className="text-gray-700">Miembros de la billetera</Label>
+              <p className="text-xs text-gray-500 mb-2">
+                Agrega al menos 1 miembro más para crear la Coperacha
+              </p>
               <div className="flex gap-2">
                 <Input
                   placeholder="Dirección Ethereum (0x...)"
@@ -192,8 +210,22 @@ export function CreateWalletDialog({}: CreateWalletDialogProps) {
                 </Button>
               </div>
 
-              {members.length > 0 && (
-                <div className="space-y-2 mt-4">
+              {/* Lista de miembros con scroll */}
+              <div className="mt-4 border border-gray-200 rounded-xl p-2 bg-gray-50/50">
+                <div className="space-y-2">
+                  {/* Tu wallet (siempre visible, sin botón X) */}
+                  <div className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl border border-purple-200/50">
+                    <div className="flex items-center gap-3">
+                      <span className="px-2 py-1 bg-purple-500 text-white text-xs rounded-lg font-semibold">
+                        Tú
+                      </span>
+                      <span className="text-sm text-gray-700 font-mono">
+                        {userAddress}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Miembros agregados (con botón X) */}
                   {members.map((member) => (
                     <div
                       key={member}
@@ -213,20 +245,26 @@ export function CreateWalletDialog({}: CreateWalletDialogProps) {
                       </Button>
                     </div>
                   ))}
-                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
-                    <p className="text-sm text-blue-900 flex items-center gap-2">
-                      <Sparkles className="w-4 h-4" />
-                      {members.length} miembro{members.length !== 1 ? "s" : ""}{" "}
-                      • Se requieren{" "}
-                      <strong>{Math.ceil(members.length / 2)} votos</strong>{" "}
-                      para aprobar gastos
-                    </p>
-                  </div>
+                </div>
+              </div>
+
+              {/* Información de votos requeridos */}
+              {members.length > 0 && (
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl mt-4">
+                  <p className="text-sm text-blue-900 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4" />
+                    {members.length + 1} miembro
+                    {members.length + 1 !== 1 ? "s" : ""} • Se requieren{" "}
+                    <strong>
+                      {Math.floor((members.length + 1) / 2) + 1} votos
+                    </strong>{" "}
+                    para aprobar gastos
+                  </p>
                 </div>
               )}
             </div>
           </div>
-          <DialogFooter className="gap-3">
+          <DialogFooter className="gap-3 pt-4 border-t mt-4">
             <Button
               type="button"
               variant="outline"
@@ -238,7 +276,7 @@ export function CreateWalletDialog({}: CreateWalletDialogProps) {
             <Button
               type="submit"
               className="bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-700 hover:to-emerald-700 text-white shadow-lg shadow-blue-500/30 rounded-xl px-6"
-              disabled={!name || members.length < 2 || isLoading}
+              disabled={!name || members.length < 1 || isLoading}
             >
               {isLoading ? (
                 <>

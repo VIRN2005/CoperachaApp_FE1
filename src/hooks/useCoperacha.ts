@@ -21,7 +21,7 @@ export function useCreateCoperacha() {
       throw new Error('Factory address not configured for this network');
     }
 
-    writeContract({
+    return writeContract({
       address: factoryAddress,
       abi: CoperachaFactoryABI,
       functionName: 'createVault',
@@ -35,8 +35,8 @@ export function useCreateCoperacha() {
 
   return {
     createCoperacha,
-    isPending,
-    isConfirming,
+    isPending, // Estado mientras se envía la tx
+    isConfirming, // Estado mientras se confirma en blockchain
     isSuccess,
     hash,
     error,
@@ -57,6 +57,7 @@ export function useUserCoperachas(userAddress?: Address) {
     args: userAddress ? [userAddress] : undefined,
     query: {
       enabled: !!userAddress && !!factoryAddress,
+      refetchInterval: 3000, // Refetch cada 3 segundos para detectar nuevas Coperachas
     },
   });
 }
@@ -120,19 +121,15 @@ export function useTotalCoperachas() {
 /**
  * Depositar fondos en una Coperacha
  */
-export function useDepositToCoperacha(vaultAddress?: Address) {
+export function useDepositToCoperacha() {
   const { data: hash, writeContract, isPending, error } = useWriteContract();
 
-  const deposit = (amountInEth: string) => {
-    if (!vaultAddress) {
-      throw new Error('Vault address is required');
-    }
-
-    writeContract({
+  const deposit = (vaultAddress: Address, amountInWei: bigint) => {
+    return writeContract({
       address: vaultAddress,
       abi: CoperachaWalletABI,
       functionName: 'deposit',
-      value: parseEther(amountInEth),
+      value: amountInWei,
     });
   };
 
@@ -153,19 +150,15 @@ export function useDepositToCoperacha(vaultAddress?: Address) {
 /**
  * Crear propuesta de retiro
  */
-export function useProposeWithdrawal(vaultAddress?: Address) {
+export function useProposeWithdrawal() {
   const { data: hash, writeContract, isPending, error } = useWriteContract();
 
-  const proposeWithdrawal = (description: string, recipient: Address, amountInEth: string) => {
-    if (!vaultAddress) {
-      throw new Error('Vault address is required');
-    }
-
-    writeContract({
+  const proposeWithdrawal = (vaultAddress: Address, recipient: Address, amountInWei: bigint, description: string) => {
+    return writeContract({
       address: vaultAddress,
       abi: CoperachaWalletABI,
       functionName: 'proposeWithdrawal',
-      args: [description, recipient, parseEther(amountInEth)],
+      args: [description, recipient, amountInWei],
     });
   };
 
@@ -219,15 +212,11 @@ export function useProposeAddMember(vaultAddress?: Address) {
 /**
  * Votar en una propuesta
  */
-export function useVoteOnProposal(vaultAddress?: Address) {
+export function useVoteOnProposal() {
   const { data: hash, writeContract, isPending, error } = useWriteContract();
 
-  const vote = (proposalId: number, inFavor: boolean) => {
-    if (!vaultAddress) {
-      throw new Error('Vault address is required');
-    }
-
-    writeContract({
+  const vote = (vaultAddress: Address, proposalId: number, inFavor: boolean) => {
+    return writeContract({
       address: vaultAddress,
       abi: CoperachaWalletABI,
       functionName: 'vote',
@@ -288,6 +277,7 @@ export function useCoperachaBalance(vaultAddress?: Address) {
     functionName: 'getBalance',
     query: {
       enabled: !!vaultAddress,
+      refetchInterval: 3000, // Refetch cada 3 segundos para ver cambios de balance
     },
   });
 }

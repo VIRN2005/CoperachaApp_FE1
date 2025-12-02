@@ -1,28 +1,91 @@
-import { useState } from 'react';
-import { Button } from './ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import { ArrowLeft, Users, TrendingUp, Sparkles, Activity } from 'lucide-react';
-import { CommunityWallet } from './Dashboard';
-import { ProposalCard } from './ProposalCard';
-import { CreateProposalDialog } from './CreateProposalDialog';
-import { DepositDialog } from './DepositDialog';
-import { TransactionList } from './TransactionList';
+import { useState } from "react";
+import { Button } from "./ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+import {
+  ArrowLeft,
+  Users,
+  TrendingUp,
+  Sparkles,
+  Activity,
+  Loader2,
+} from "lucide-react";
+import { ProposalList } from "./ProposalList";
+import { CreateProposalDialog } from "./CreateProposalDialog";
+import { DepositDialog } from "./DepositDialog";
+import { Address, formatEther } from "viem";
+import { useAccount } from "wagmi";
+import {
+  useCoperachaInfo,
+  useCoperachaBalance,
+  useCoperachaMembers,
+} from "../hooks/useCoperacha";
 
 interface WalletDetailProps {
-  wallet: CommunityWallet;
-  userAddress: string;
+  vaultAddress: Address;
   onBack: () => void;
-  onVote: (walletId: string, proposalId: string, vote: 'for' | 'against') => void;
-  onCreateProposal: (walletId: string, title: string, description: string, amount: string, recipient: string) => void;
-  onDeposit: (walletId: string, amount: string) => void;
 }
 
-export function WalletDetail({ wallet, userAddress, onBack, onVote, onCreateProposal, onDeposit }: WalletDetailProps) {
-  const [activeTab, setActiveTab] = useState('proposals');
+export function WalletDetail({ vaultAddress, onBack }: WalletDetailProps) {
+  const [activeTab, setActiveTab] = useState("proposals");
+  const { address: userAddress } = useAccount();
 
-  const activeProposals = wallet.proposals.filter(p => p.status === 'active');
-  const completedProposals = wallet.proposals.filter(p => p.status !== 'active');
+  // Obtener datos del contrato
+  const { data: vaultInfo, isLoading: isLoadingInfo } =
+    useCoperachaInfo(vaultAddress);
+  const { data: balance, isLoading: isLoadingBalance } =
+    useCoperachaBalance(vaultAddress);
+  const { data: members, isLoading: isLoadingMembers } =
+    useCoperachaMembers(vaultAddress);
+
+  // Loading state
+  if (isLoadingInfo || isLoadingBalance || isLoadingMembers) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600">Cargando detalles de la Coperacha...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!vaultInfo) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600">
+            Error cargando información de la Coperacha
+          </p>
+          <Button onClick={onBack} className="mt-4">
+            Volver al Dashboard
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const [name, , , proposalCounter] = vaultInfo;
+  const balanceInEth = balance ? formatEther(balance) : "0";
+  const memberList = members || [];
+  const proposalCount = Number(proposalCounter);
+  const requiredVotes = Math.ceil(memberList.length / 2);
+
+  // Convertir miembros a formato para CreateProposalDialog
+  const formattedMembers = memberList.map((addr, idx) => ({
+    address: addr,
+    name: `Miembro ${idx + 1}`,
+    avatar: [
+      "from-purple-400 to-purple-600",
+      "from-green-400 to-green-600",
+      "from-orange-400 to-orange-600",
+      "from-blue-400 to-blue-600",
+      "from-pink-400 to-pink-600",
+    ][idx % 5],
+  }));
+
+  // TODO: Obtener propuestas activas para el contador
+  const activeProposalsCount = 0;
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-8">
@@ -40,16 +103,18 @@ export function WalletDetail({ wallet, userAddress, onBack, onVote, onCreateProp
       <div className="mb-8">
         <div className="flex items-start justify-between mb-6">
           <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-emerald-600 bg-clip-text text-transparent mb-2">{wallet.name}</h1>
-            <p className="text-xl font-semibold text-gray-600">{wallet.description}</p>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-emerald-600 bg-clip-text text-transparent mb-2">
+              {name}
+            </h1>
+            <p className="text-sm text-gray-500 font-mono mt-2">
+              {vaultAddress}
+            </p>
           </div>
           <div className="flex gap-3">
-            <DepositDialog onDeposit={(amount) => onDeposit(wallet.id, amount)} />
+            <DepositDialog vaultAddress={vaultAddress} />
             <CreateProposalDialog
-              members={wallet.members}
-              onCreateProposal={(title, description, amount, recipient) =>
-                onCreateProposal(wallet.id, title, description, amount, recipient)
-              }
+              vaultAddress={vaultAddress}
+              members={formattedMembers}
             />
           </div>
         </div>
@@ -67,8 +132,12 @@ export function WalletDetail({ wallet, userAddress, onBack, onVote, onCreateProp
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">${wallet.balance}</p>
-                <p className="text-sm font-semibold text-gray-500 mt-1">Disponible para gastar</p>
+                <p className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+                  {parseFloat(balanceInEth).toFixed(4)} ETH
+                </p>
+                <p className="text-sm font-semibold text-gray-500 mt-1">
+                  Disponible para gastar
+                </p>
               </CardContent>
             </Card>
           </div>
@@ -85,18 +154,22 @@ export function WalletDetail({ wallet, userAddress, onBack, onVote, onCreateProp
               </CardHeader>
               <CardContent>
                 <div className="flex items-center gap-2 mb-3">
-                  {wallet.members.slice(0, 5).map((member, idx) => (
+                  {formattedMembers.slice(0, 5).map((member, idx) => (
                     <div
                       key={idx}
                       className={`w-10 h-10 bg-gradient-to-br ${member.avatar} rounded-full border-3 border-white shadow-lg -ml-2 first:ml-0 hover:scale-110 transition-transform`}
-                      title={member.name}
+                      title={member.address}
                     />
                   ))}
-                  {wallet.members.length > 5 && (
-                    <span className="text-sm text-gray-600 ml-1">+{wallet.members.length - 5}</span>
+                  {formattedMembers.length > 5 && (
+                    <span className="text-sm text-gray-600 ml-1">
+                      +{formattedMembers.length - 5}
+                    </span>
                   )}
                 </div>
-                <p className="text-sm text-gray-500">{wallet.members.length} participantes activos</p>
+                <p className="text-sm text-gray-500">
+                  {formattedMembers.length} participantes activos
+                </p>
               </CardContent>
             </Card>
           </div>
@@ -112,8 +185,12 @@ export function WalletDetail({ wallet, userAddress, onBack, onVote, onCreateProp
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-3xl font-bold bg-gradient-to-r from-teal-600 to-emerald-600 bg-clip-text text-transparent">{activeProposals.length}</p>
-                <p className="text-sm font-semibold text-gray-500 mt-1">Requieren tu voto</p>
+                <p className="text-3xl font-bold bg-gradient-to-r from-teal-600 to-emerald-600 bg-clip-text text-transparent">
+                  {proposalCount}
+                </p>
+                <p className="text-sm font-semibold text-gray-500 mt-1">
+                  Total de propuestas
+                </p>
               </CardContent>
             </Card>
           </div>
@@ -123,21 +200,21 @@ export function WalletDetail({ wallet, userAddress, onBack, onVote, onCreateProp
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="mb-6 bg-white/60 backdrop-blur-sm border border-white/50 p-1 rounded-2xl shadow-lg">
-          <TabsTrigger 
+          <TabsTrigger
             value="proposals"
             className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-emerald-600 data-[state=active]:text-white rounded-xl px-6 py-3 transition-all"
           >
             <Sparkles className="w-4 h-4 mr-2" />
-            Propuestas {activeProposals.length > 0 && `(${activeProposals.length})`}
+            Propuestas {proposalCount > 0 && `(${proposalCount})`}
           </TabsTrigger>
-          <TabsTrigger 
+          <TabsTrigger
             value="history"
             className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-emerald-600 data-[state=active]:text-white rounded-xl px-6 py-3 transition-all"
           >
             <Activity className="w-4 h-4 mr-2" />
             Historial
           </TabsTrigger>
-          <TabsTrigger 
+          <TabsTrigger
             value="members"
             className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-emerald-600 data-[state=active]:text-white rounded-xl px-6 py-3 transition-all"
           >
@@ -147,62 +224,47 @@ export function WalletDetail({ wallet, userAddress, onBack, onVote, onCreateProp
         </TabsList>
 
         <TabsContent value="proposals" className="space-y-6">
-          {activeProposals.length > 0 ? (
-            <>
-              <h3 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                <Sparkles className="w-6 h-6 text-blue-500" />
-                Propuestas Activas
-              </h3>
-              {activeProposals.map((proposal) => (
-                <ProposalCard
-                  key={proposal.id}
-                  proposal={proposal}
-                  userAddress={userAddress}
-                  onVote={(vote) => onVote(wallet.id, proposal.id, vote)}
-                />
-              ))}
-            </>
-          ) : (
-            <div className="text-center py-20">
-              <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-emerald-100 rounded-3xl flex items-center justify-center mx-auto mb-6">
-                <Sparkles className="w-10 h-10 text-blue-400" />
-              </div>
-              <p className="text-xl font-bold text-gray-700 mb-2">No hay propuestas activas</p>
-              <p className="font-semibold text-gray-500">Crea una propuesta para comenzar</p>
-            </div>
-          )}
-
-          {completedProposals.length > 0 && (
-            <>
-              <h3 className="text-2xl font-bold text-gray-900 mt-12">Propuestas Completadas</h3>
-              {completedProposals.map((proposal) => (
-                <ProposalCard
-                  key={proposal.id}
-                  proposal={proposal}
-                  userAddress={userAddress}
-                  onVote={(vote) => onVote(wallet.id, proposal.id, vote)}
-                />
-              ))}
-            </>
-          )}
+          <ProposalList
+            vaultAddress={vaultAddress}
+            proposalCount={proposalCount}
+            requiredVotes={requiredVotes}
+          />
         </TabsContent>
 
         <TabsContent value="history">
-          <TransactionList transactions={wallet.transactions} members={wallet.members} />
+          {/* TODO: Obtener eventos del blockchain */}
+          <div className="text-center py-20">
+            <p className="text-xl font-bold text-gray-700 mb-2">
+              Historial de Transacciones
+            </p>
+            <p className="font-semibold text-gray-500">
+              En construcción - Historial de depósitos y retiros
+            </p>
+          </div>
         </TabsContent>
 
         <TabsContent value="members">
           <div className="grid gap-4">
-            {wallet.members.map((member) => (
+            {formattedMembers.map((member) => (
               <div key={member.address} className="relative group">
-                <div className={`absolute inset-0 bg-gradient-to-r ${member.avatar} rounded-2xl blur-xl opacity-0 group-hover:opacity-20 transition-opacity`}></div>
+                <div
+                  className={`absolute inset-0 bg-gradient-to-r ${member.avatar} rounded-2xl blur-xl opacity-0 group-hover:opacity-20 transition-opacity`}
+                ></div>
                 <Card className="relative border-0 bg-white/80 backdrop-blur-xl shadow-lg hover:shadow-xl transition-all rounded-2xl">
                   <CardContent className="p-6">
                     <div className="flex items-center gap-4">
-                      <div className={`w-16 h-16 bg-gradient-to-br ${member.avatar} rounded-2xl shadow-lg`} />
+                      <div
+                        className={`w-16 h-16 bg-gradient-to-br ${member.avatar} rounded-2xl shadow-lg flex items-center justify-center text-white font-bold text-2xl`}
+                      >
+                        #
+                      </div>
                       <div className="flex-1">
-                        <p className="text-lg font-bold text-gray-900">{member.name}</p>
-                        <p className="text-sm font-semibold text-gray-500 font-mono">{member.address}</p>
+                        <p className="text-lg font-bold text-gray-900">
+                          {member.name}
+                        </p>
+                        <p className="text-sm font-semibold text-gray-500 font-mono">
+                          {member.address}
+                        </p>
                       </div>
                       {member.address === userAddress && (
                         <span className="px-4 py-2 bg-gradient-to-r from-blue-500 to-emerald-500 text-white rounded-xl text-sm shadow-lg">

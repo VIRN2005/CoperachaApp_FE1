@@ -1,42 +1,129 @@
-import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from './ui/dialog';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Label } from './ui/label';
-import { Textarea } from './ui/textarea';
-import { Plus, X, Sparkles } from 'lucide-react';
+import { useState, useEffect } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "./ui/dialog";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+import { Textarea } from "./ui/textarea";
+import { Plus, X, Sparkles, Loader2 } from "lucide-react";
+import { useCreateCoperacha } from "../hooks/useCoperacha";
+import { useAccount } from "wagmi";
+import { toast } from "sonner";
+import { isAddress } from "viem";
 
-interface CreateWalletDialogProps {
-  onCreateWallet: (name: string, description: string, members: string[]) => void;
-}
+interface CreateWalletDialogProps {}
 
-export function CreateWalletDialog({ onCreateWallet }: CreateWalletDialogProps) {
+export function CreateWalletDialog({}: CreateWalletDialogProps) {
+  const { address: userAddress, chain } = useAccount();
   const [open, setOpen] = useState(false);
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [memberInput, setMemberInput] = useState('');
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [memberInput, setMemberInput] = useState("");
   const [members, setMembers] = useState<string[]>([]);
 
-  const handleAddMember = () => {
-    if (memberInput.trim() && !members.includes(memberInput.trim())) {
-      setMembers([...members, memberInput.trim()]);
-      setMemberInput('');
+  const { createCoperacha, isPending, isConfirming, isSuccess, hash, error } =
+    useCreateCoperacha();
+  const isLoading = isPending || isConfirming;
+
+  // Manejar éxito de la transacción
+  useEffect(() => {
+    if (isSuccess && hash) {
+      toast.success("¡Coperacha creada!", {
+        id: "create-tx",
+        description: `"${name}" está lista para usar`,
+      });
+
+      // Limpiar formulario y cerrar
+      setName("");
+      setDescription("");
+      setMembers([]);
+      setOpen(false);
     }
+  }, [isSuccess, hash, name]);
+
+  // Manejar errores
+  useEffect(() => {
+    if (error) {
+      console.error("Transaction error:", error);
+    }
+  }, [error]);
+
+  const handleAddMember = () => {
+    const address = memberInput.trim();
+    if (!address) return;
+
+    if (!isAddress(address)) {
+      toast.error("Dirección inválida", {
+        description: "Por favor ingresa una dirección Ethereum válida (0x...)",
+      });
+      return;
+    }
+
+    if (members.includes(address)) {
+      toast.error("Miembro duplicado", {
+        description: "Esta dirección ya fue agregada",
+      });
+      return;
+    }
+
+    setMembers([...members, address]);
+    setMemberInput("");
+    toast.success("Miembro agregado", {
+      description: `${address.slice(0, 6)}...${address.slice(-4)}`,
+    });
   };
 
   const handleRemoveMember = (address: string) => {
-    setMembers(members.filter(m => m !== address));
+    setMembers(members.filter((m) => m !== address));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (name && members.length >= 2) {
-      onCreateWallet(name, description, members);
-      setName('');
-      setDescription('');
-      setMembers([]);
-      setOpen(false);
+    if (!name || members.length < 1) {
+      toast.error("Datos incompletos", {
+        description: "Agrega al menos 1 miembro además de ti",
+      });
+      return;
     }
+
+    // Incluir al usuario actual en la lista de miembros si no está
+    const allMembers =
+      userAddress && !members.includes(userAddress)
+        ? [userAddress, ...members]
+        : members;
+
+    console.log("=== CREANDO COPERACHA ===");
+    console.log("Nombre:", name);
+    console.log("Miembros:", allMembers);
+    console.log("Chain:", chain?.id, chain?.name);
+    console.log("Usuario:", userAddress);
+
+    toast.loading("Confirma la transacción en tu wallet", {
+      id: "create-tx",
+    });
+
+    createCoperacha(name, allMembers as `0x${string}`[])
+      .then((txHash) => {
+        console.log("Transacción enviada:", txHash);
+        toast.loading("Esperando confirmación...", {
+          id: "create-tx",
+          description: "La transacción se está procesando",
+        });
+      })
+      .catch((err: any) => {
+        console.error("Error:", err);
+        toast.error("Error al crear Coperacha", {
+          id: "create-tx",
+          description:
+            err?.message || err?.shortMessage || "Transacción rechazada",
+        });
+      });
   };
 
   return (
@@ -57,7 +144,9 @@ export function CreateWalletDialog({ onCreateWallet }: CreateWalletDialogProps) 
         <form onSubmit={handleSubmit}>
           <div className="space-y-6 py-6">
             <div className="space-y-2">
-              <Label htmlFor="name" className="text-gray-700">Nombre de la billetera</Label>
+              <Label htmlFor="name" className="text-gray-700">
+                Nombre de la billetera
+              </Label>
               <Input
                 id="name"
                 placeholder="Ej: Familia García"
@@ -69,7 +158,9 @@ export function CreateWalletDialog({ onCreateWallet }: CreateWalletDialogProps) 
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description" className="text-gray-700">Descripción</Label>
+              <Label htmlFor="description" className="text-gray-700">
+                Descripción
+              </Label>
               <Textarea
                 id="description"
                 placeholder="¿Para qué usarán esta billetera?"
@@ -87,23 +178,30 @@ export function CreateWalletDialog({ onCreateWallet }: CreateWalletDialogProps) 
                   placeholder="Dirección Ethereum (0x...)"
                   value={memberInput}
                   onChange={(e) => setMemberInput(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddMember())}
+                  onKeyPress={(e) =>
+                    e.key === "Enter" && (e.preventDefault(), handleAddMember())
+                  }
                   className="border-gray-200 focus:border-blue-500 rounded-xl"
                 />
-                <Button 
-                  type="button" 
-                  onClick={handleAddMember} 
+                <Button
+                  type="button"
+                  onClick={handleAddMember}
                   className="bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-700 hover:to-emerald-700 text-white rounded-xl px-6"
                 >
                   Agregar
                 </Button>
               </div>
-              
+
               {members.length > 0 && (
                 <div className="space-y-2 mt-4">
                   {members.map((member) => (
-                    <div key={member} className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-emerald-50 rounded-xl border border-blue-200/50">
-                      <span className="text-sm text-gray-700 font-mono">{member}</span>
+                    <div
+                      key={member}
+                      className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-emerald-50 rounded-xl border border-blue-200/50"
+                    >
+                      <span className="text-sm text-gray-700 font-mono">
+                        {member}
+                      </span>
                       <Button
                         type="button"
                         variant="ghost"
@@ -118,7 +216,10 @@ export function CreateWalletDialog({ onCreateWallet }: CreateWalletDialogProps) 
                   <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
                     <p className="text-sm text-blue-900 flex items-center gap-2">
                       <Sparkles className="w-4 h-4" />
-                      {members.length} miembro{members.length !== 1 ? 's' : ''} • Se requieren <strong>{Math.ceil(members.length / 2)} votos</strong> para aprobar gastos
+                      {members.length} miembro{members.length !== 1 ? "s" : ""}{" "}
+                      • Se requieren{" "}
+                      <strong>{Math.ceil(members.length / 2)} votos</strong>{" "}
+                      para aprobar gastos
                     </p>
                   </div>
                 </div>
@@ -126,20 +227,27 @@ export function CreateWalletDialog({ onCreateWallet }: CreateWalletDialogProps) 
             </div>
           </div>
           <DialogFooter className="gap-3">
-            <Button 
-              type="button" 
-              variant="outline" 
+            <Button
+              type="button"
+              variant="outline"
               onClick={() => setOpen(false)}
               className="rounded-xl border-2 border-gray-200 hover:bg-gray-50 px-6"
             >
               Cancelar
             </Button>
-            <Button 
-              type="submit" 
-              className="bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-700 hover:to-emerald-700 text-white shadow-lg shadow-blue-500/30 rounded-xl px-6" 
-              disabled={!name || members.length < 2}
+            <Button
+              type="submit"
+              className="bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-700 hover:to-emerald-700 text-white shadow-lg shadow-blue-500/30 rounded-xl px-6"
+              disabled={!name || members.length < 2 || isLoading}
             >
-              Crear Billetera
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  {isConfirming ? "Confirmando..." : "Creando..."}
+                </>
+              ) : (
+                "Crear Billetera"
+              )}
             </Button>
           </DialogFooter>
         </form>

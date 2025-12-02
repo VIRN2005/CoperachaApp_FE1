@@ -1,34 +1,108 @@
-import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from './ui/dialog';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Label } from './ui/label';
-import { Textarea } from './ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { FilePlus } from 'lucide-react';
-import { Member } from './Dashboard';
+import { useState, useEffect } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "./ui/dialog";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+import { Textarea } from "./ui/textarea";
+import { FilePlus, Loader2 } from "lucide-react";
+import { Address, parseEther, isAddress } from "viem";
+import { useProposeWithdrawal } from "../hooks/useCoperacha";
+import { toast } from "sonner";
 
-interface CreateProposalDialogProps {
-  members: Member[];
-  onCreateProposal: (title: string, description: string, amount: string, recipient: string) => void;
+interface Member {
+  address: string;
+  name: string;
+  avatar: string;
 }
 
-export function CreateProposalDialog({ members, onCreateProposal }: CreateProposalDialogProps) {
+interface CreateProposalDialogProps {
+  vaultAddress: Address;
+  members: Member[];
+}
+
+export function CreateProposalDialog({
+  vaultAddress,
+  members,
+}: CreateProposalDialogProps) {
   const [open, setOpen] = useState(false);
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [amount, setAmount] = useState('');
-  const [recipient, setRecipient] = useState('');
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [amount, setAmount] = useState("");
+  const [recipient, setRecipient] = useState("");
+
+  const { proposeWithdrawal, isPending, isConfirming, isSuccess, error } =
+    useProposeWithdrawal();
+  const isLoading = isPending || isConfirming;
+
+  // Manejar estados de la transacción
+  useEffect(() => {
+    if (isPending) {
+      toast.loading("Confirma la transacción en tu wallet...", {
+        id: "proposal-tx",
+      });
+    } else if (isConfirming) {
+      toast.loading("Creando propuesta...", {
+        id: "proposal-tx",
+        description: "Esperando confirmación en el blockchain",
+      });
+    } else if (isSuccess) {
+      toast.success("¡Propuesta creada!", {
+        id: "proposal-tx",
+        description: `"${title}" requiere votación de los miembros`,
+      });
+      setTitle("");
+      setDescription("");
+      setAmount("");
+      setRecipient("");
+      setOpen(false);
+    } else if (error) {
+      toast.error("Error al crear propuesta", {
+        id: "proposal-tx",
+        description: error?.message || "Transacción rechazada",
+      });
+    }
+  }, [isPending, isConfirming, isSuccess, error, title]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (title && amount && recipient) {
-      onCreateProposal(title, description, amount, recipient);
-      setTitle('');
-      setDescription('');
-      setAmount('');
-      setRecipient('');
-      setOpen(false);
+
+    if (!title || !amount || !recipient) {
+      toast.error("Datos incompletos", {
+        description: "Completa todos los campos requeridos",
+      });
+      return;
+    }
+
+    if (!isAddress(recipient)) {
+      toast.error("Dirección inválida", {
+        description: "Ingresa una dirección Ethereum válida",
+      });
+      return;
+    }
+
+    try {
+      const amountInWei = parseEther(amount);
+
+      // Combinar título y descripción para enviar al contrato
+      const fullDescription = description ? `${title} - ${description}` : title;
+
+      proposeWithdrawal(
+        vaultAddress,
+        recipient as Address,
+        amountInWei,
+        fullDescription
+      );
+    } catch (error: any) {
+      toast.error("Error", {
+        description: error.message || "Datos inválidos",
+      });
     }
   };
 
@@ -73,51 +147,73 @@ export function CreateProposalDialog({ members, onCreateProposal }: CreatePropos
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="amount">Monto</Label>
+              <Label htmlFor="amount">Monto en ETH</Label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+                  Ξ
+                </span>
                 <Input
                   id="amount"
                   type="number"
-                  step="0.01"
-                  placeholder="0.00"
+                  step="0.0001"
+                  placeholder="0.0"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   className="pl-7 border-gray-200 focus:border-blue-500 rounded-xl"
                   required
+                  disabled={isLoading}
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="recipient">Destinatario</Label>
-              <Select value={recipient} onValueChange={setRecipient} required>
-                <SelectTrigger className="border-gray-200 focus:border-blue-500 rounded-xl">
-                  <SelectValue placeholder="Selecciona un miembro" />
-                </SelectTrigger>
-                <SelectContent>
-                  {members.map((member) => (
-                    <SelectItem key={member.address} value={member.address}>
-                      {member.name} ({member.address.slice(0, 10)}...)
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="recipient">Dirección del Destinatario</Label>
+              <Input
+                id="recipient"
+                placeholder="0x..."
+                value={recipient}
+                onChange={(e) => setRecipient(e.target.value)}
+                className="font-mono border-gray-200 focus:border-blue-500 rounded-xl"
+                required
+                disabled={isLoading}
+              />
+              <p className="text-xs text-gray-500">
+                Puedes copiar la dirección de un miembro o ingresar cualquier
+                dirección Ethereum
+              </p>
             </div>
 
             <div className="bg-gradient-to-r from-blue-50 to-emerald-50 border border-blue-200 rounded-xl p-4">
               <p className="text-sm text-blue-900">
-                <strong>Importante:</strong> Esta propuesta requerirá {Math.ceil(members.length / 2)} votos a favor
-                para ser aprobada automáticamente.
+                <strong>Importante:</strong> Esta propuesta requerirá{" "}
+                {Math.ceil(members.length / 2)} votos a favor para ser aprobada
+                y ejecutada automáticamente.
               </p>
             </div>
           </div>
           <DialogFooter className="gap-3">
-            <Button type="button" variant="outline" onClick={() => setOpen(false)} className="rounded-xl">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setOpen(false)}
+              className="rounded-xl"
+              disabled={isLoading}
+            >
               Cancelar
             </Button>
-            <Button type="submit" className="bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-700 hover:to-emerald-700 text-white shadow-lg shadow-blue-500/30 rounded-xl">
-              Crear Propuesta
+            <Button
+              type="submit"
+              className="bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-700 hover:to-emerald-700 text-white shadow-lg shadow-blue-500/30 rounded-xl"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  {isConfirming ? "Confirmando..." : "Creando..."}
+                </>
+              ) : (
+                "Crear Propuesta"
+              )}
             </Button>
           </DialogFooter>
         </form>

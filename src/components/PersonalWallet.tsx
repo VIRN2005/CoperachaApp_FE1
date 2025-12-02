@@ -9,9 +9,11 @@ import {
 } from "lucide-react";
 import { useAccount, useBalance } from "wagmi";
 import { formatEther } from "viem";
+import { useEthPrice, formatEthToUSD } from "../hooks/useEthPrice";
 
 export function PersonalWallet() {
   const { address } = useAccount();
+  const ethPrice = useEthPrice();
   const { data: balanceData } = useBalance({
     address: address,
   });
@@ -48,11 +50,24 @@ export function PersonalWallet() {
               Balance Disponible
             </p>
             <p className="text-4xl font-bold text-white mb-2">
-              {balanceInEth.toFixed(4)} ETH
+              ${formatEthToUSD(balanceInEth.toString(), ethPrice)}
             </p>
             <p className="text-sm font-semibold text-blue-100">
-              ≈ ${(balanceInEth * 2400).toFixed(2)} USD
+              {balanceInEth.toFixed(4)} ETH
             </p>
+            <div className="mt-3 pt-3 border-t border-blue-400/30 flex items-center justify-between">
+              <span className="text-xs text-blue-100 flex items-center gap-1">
+                <TrendingUp className="w-3 h-3" />
+                Precio ETH
+              </span>
+              <span className="text-sm font-bold text-white">
+                $
+                {ethPrice.toLocaleString("en-US", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </span>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">

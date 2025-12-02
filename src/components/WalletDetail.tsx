@@ -20,6 +20,7 @@ import {
   useCoperachaBalance,
   useCoperachaMembers,
 } from "../hooks/useCoperacha";
+import { useEthPrice, formatEthToUSD } from "../hooks/useEthPrice";
 
 interface WalletDetailProps {
   vaultAddress: Address;
@@ -29,6 +30,7 @@ interface WalletDetailProps {
 export function WalletDetail({ vaultAddress, onBack }: WalletDetailProps) {
   const [activeTab, setActiveTab] = useState("proposals");
   const { address: userAddress } = useAccount();
+  const ethPrice = useEthPrice();
 
   // Obtener datos del contrato
   const { data: vaultInfo, isLoading: isLoadingInfo } =
@@ -133,10 +135,10 @@ export function WalletDetail({ vaultAddress, onBack }: WalletDetailProps) {
               </CardHeader>
               <CardContent>
                 <p className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
-                  {parseFloat(balanceInEth).toFixed(4)} ETH
+                  ${formatEthToUSD(balanceInEth, ethPrice)}
                 </p>
                 <p className="text-sm font-semibold text-gray-500 mt-1">
-                  Disponible para gastar
+                  {parseFloat(balanceInEth).toFixed(4)} ETH disponibles
                 </p>
               </CardContent>
             </Card>

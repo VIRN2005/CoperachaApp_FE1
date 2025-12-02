@@ -14,6 +14,7 @@ import { ArrowDownToLine, Loader2 } from "lucide-react";
 import { Address, parseEther } from "viem";
 import { useDepositToCoperacha } from "../hooks/useCoperacha";
 import { toast } from "sonner";
+import { useEthPrice, formatEthToUSD } from "../hooks/useEthPrice";
 
 interface DepositDialogProps {
   vaultAddress: Address;
@@ -22,6 +23,7 @@ interface DepositDialogProps {
 export function DepositDialog({ vaultAddress }: DepositDialogProps) {
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState("");
+  const ethPrice = useEthPrice();
 
   const { deposit, isPending, isConfirming, isSuccess, error } =
     useDepositToCoperacha();
@@ -41,7 +43,7 @@ export function DepositDialog({ vaultAddress }: DepositDialogProps) {
     } else if (isSuccess) {
       toast.success("¡Depósito exitoso!", {
         id: "deposit-tx",
-        description: `${amount} ETH depositados a la Coperacha`,
+        description: `$${amount} depositados a la Coperacha`,
       });
       setAmount("");
       setOpen(false);
@@ -63,7 +65,10 @@ export function DepositDialog({ vaultAddress }: DepositDialogProps) {
     }
 
     try {
-      const amountInWei = parseEther(amount);
+      // Convertir USD a ETH
+      const usdAmount = parseFloat(amount);
+      const ethAmount = (usdAmount / ethPrice).toFixed(18);
+      const amountInWei = parseEther(ethAmount);
       deposit(vaultAddress, amountInWei);
     } catch (error: any) {
       toast.error("Error", {
@@ -92,16 +97,16 @@ export function DepositDialog({ vaultAddress }: DepositDialogProps) {
         <form onSubmit={handleSubmit}>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="deposit-amount">Monto en ETH</Label>
+              <Label htmlFor="deposit-amount">Monto en USD</Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
-                  Ξ
+                  $
                 </span>
                 <Input
                   id="deposit-amount"
                   type="number"
-                  step="0.0001"
-                  placeholder="0.0"
+                  step="0.01"
+                  placeholder="0.00"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   className="pl-7 border-gray-200 focus:border-blue-500 rounded-xl"
@@ -109,6 +114,11 @@ export function DepositDialog({ vaultAddress }: DepositDialogProps) {
                   disabled={isLoading}
                 />
               </div>
+              {amount && parseFloat(amount) > 0 && (
+                <p className="text-xs text-gray-500">
+                  ≈ {(parseFloat(amount) / ethPrice).toFixed(6)} ETH
+                </p>
+              )}
             </div>
 
             <div className="bg-gradient-to-r from-blue-50 to-emerald-50 border border-blue-200 rounded-xl p-4">

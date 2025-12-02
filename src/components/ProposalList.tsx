@@ -20,6 +20,7 @@ import {
 } from "../hooks/useCoperacha";
 import { ProposalStatus } from "../contracts/addresses";
 import { toast } from "sonner";
+import { useEthPrice, formatEthToUSD } from "../hooks/useEthPrice";
 
 interface ProposalListProps {
   vaultAddress: Address;
@@ -49,6 +50,7 @@ function ProposalItem({
   requiredVotes: number;
 }) {
   const { address: userAddress } = useAccount();
+  const ethPrice = useEthPrice();
   const {
     data: proposalData,
     isLoading,
@@ -177,7 +179,10 @@ function ProposalItem({
                 <div className="px-4 py-2 bg-white/60 backdrop-blur-sm rounded-xl border border-white/50">
                   <span className="text-sm text-gray-500">Monto: </span>
                   <span className="text-lg font-bold bg-gradient-to-r from-blue-600 to-emerald-600 bg-clip-text text-transparent">
-                    {parseFloat(amountInEth).toFixed(4)} ETH
+                    ${formatEthToUSD(amountInEth, ethPrice)}
+                  </span>
+                  <span className="text-xs text-gray-400 ml-2">
+                    ({parseFloat(amountInEth).toFixed(4)} ETH)
                   </span>
                 </div>
                 <div className="px-4 py-2 bg-white/60 backdrop-blur-sm rounded-xl border border-white/50">

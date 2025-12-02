@@ -15,6 +15,7 @@ import { FilePlus, Loader2 } from "lucide-react";
 import { Address, parseEther, isAddress } from "viem";
 import { useProposeWithdrawal } from "../hooks/useCoperacha";
 import { toast } from "sonner";
+import { useEthPrice, formatEthToUSD } from "../hooks/useEthPrice";
 
 interface Member {
   address: string;
@@ -36,6 +37,7 @@ export function CreateProposalDialog({
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
   const [recipient, setRecipient] = useState("");
+  const ethPrice = useEthPrice();
 
   const { proposeWithdrawal, isPending, isConfirming, isSuccess, error } =
     useProposeWithdrawal();
@@ -88,7 +90,10 @@ export function CreateProposalDialog({
     }
 
     try {
-      const amountInWei = parseEther(amount);
+      // Convertir USD a ETH
+      const usdAmount = parseFloat(amount);
+      const ethAmount = (usdAmount / ethPrice).toFixed(18);
+      const amountInWei = parseEther(ethAmount);
 
       // Combinar título y descripción para enviar al contrato
       const fullDescription = description ? `${title} - ${description}` : title;
@@ -147,16 +152,16 @@ export function CreateProposalDialog({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="amount">Monto en ETH</Label>
+              <Label htmlFor="amount">Monto en USD</Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
-                  Ξ
+                  $
                 </span>
                 <Input
                   id="amount"
                   type="number"
-                  step="0.0001"
-                  placeholder="0.0"
+                  step="0.01"
+                  placeholder="0.00"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   className="pl-7 border-gray-200 focus:border-blue-500 rounded-xl"
@@ -164,6 +169,11 @@ export function CreateProposalDialog({
                   disabled={isLoading}
                 />
               </div>
+              {amount && parseFloat(amount) > 0 && (
+                <p className="text-xs text-gray-500">
+                  ≈ {(parseFloat(amount) / ethPrice).toFixed(6)} ETH
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">

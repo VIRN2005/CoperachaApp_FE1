@@ -20,11 +20,11 @@ export const CONTRACTS = {
   },
   // Hardhat Local
   31337: {
-    CoperachaFactory: '0x5FbDB2315678afecb367f032d93F642f64180aa3' as Address, // Dirección por defecto de Hardhat
+    CoperachaFactory: '0x9E545E3C0baAB3E08CdfD552C960A1050f373042' as Address, // Dirección por defecto de Hardhat
   },
   // Localhost
   1337: {
-    CoperachaFactory: '0x5FbDB2315678afecb367f032d93F642f64180aa3' as Address,
+    CoperachaFactory: '0x9E545E3C0baAB3E08CdfD552C960A1050f373042' as Address,
   },
 } as const;
 

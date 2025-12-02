@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { Address, formatEther } from "viem";
 import { useCoperachaInfo, useCoperachaBalance } from "../hooks/useCoperacha";
+import { useEthPrice, formatEthToUSD } from "../hooks/useEthPrice";
 
 interface CommunityWalletsProps {
   vaultAddresses: readonly Address[];
@@ -25,6 +26,7 @@ function CoperachaCard({
 }) {
   const { data: vaultInfo } = useCoperachaInfo(vaultAddress);
   const { data: balance } = useCoperachaBalance(vaultAddress);
+  const ethPrice = useEthPrice();
 
   const gradients = [
     "from-blue-500 to-cyan-500",
@@ -93,8 +95,11 @@ function CoperachaCard({
                       Balance
                     </p>
                     <p
-                      className={`text-xl bg-gradient-to-r ${gradient} bg-clip-text text-transparent`}
+                      className={`text-lg font-bold bg-gradient-to-r ${gradient} bg-clip-text text-transparent`}
                     >
+                      ${formatEthToUSD(balanceInEth, ethPrice)}
+                    </p>
+                    <p className="text-xs text-gray-400 mt-1">
                       {parseFloat(balanceInEth).toFixed(4)} ETH
                     </p>
                   </div>

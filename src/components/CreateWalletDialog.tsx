@@ -51,6 +51,24 @@ export function CreateWalletDialog({}: CreateWalletDialogProps) {
   useEffect(() => {
     if (error) {
       console.error("Transaction error:", error);
+
+      // Cerrar el toast de loading y mostrar el error
+      toast.dismiss("create-tx");
+
+      // Determinar el tipo de error
+      const errorMessage = error.message || String(error);
+      if (
+        errorMessage.includes("User rejected") ||
+        errorMessage.includes("user rejected")
+      ) {
+        toast.error("Transacción cancelada", {
+          description: "Rechazaste la transacción en tu wallet",
+        });
+      } else {
+        toast.error("Error al crear Coperacha", {
+          description: "Ocurrió un error. Por favor intenta de nuevo.",
+        });
+      }
     }
   }, [error]);
 

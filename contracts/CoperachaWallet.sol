@@ -37,6 +37,7 @@ contract CoperachaWallet {
     mapping(address => bool) public isMember;
     uint256 public proposalCounter;
     mapping(uint256 => Proposal) public proposals;
+    uint256 public reservedFunds; // Fondos reservados por propuestas pendientes
 
     event DepositMade(address indexed depositor, uint256 amount);
     event ProposalCreated(
@@ -95,12 +96,15 @@ contract CoperachaWallet {
         uint256 _amount
     ) external onlyMember returns (uint256) {
         require(_amount > 0, "Amount must be greater than 0");
-        require(
-            _amount <= address(this).balance,
-            "Insufficient funds in vault"
-        );
         require(_recipient != address(0), "Invalid recipient address");
         require(bytes(_description).length > 0, "Description cannot be empty");
+
+        // Verificar que hay fondos disponibles (balance - fondos reservados)
+        uint256 availableFunds = address(this).balance - reservedFunds;
+        require(
+            _amount <= availableFunds,
+            "Insufficient available funds (some funds are reserved for pending proposals)"
+        );
 
         uint256 proposalId = proposalCounter++;
         Proposal storage newProposal = proposals[proposalId];
@@ -112,6 +116,9 @@ contract CoperachaWallet {
         newProposal.recipient = _recipient;
         newProposal.amount = _amount;
         newProposal.status = ProposalStatus.PENDING;
+
+        // Reservar los fondos
+        reservedFunds += _amount;
         newProposal.createdAt = block.timestamp;
 
         emit ProposalCreated(proposalId, ProposalType.WITHDRAWAL, msg.sender);
@@ -180,6 +187,8 @@ contract CoperachaWallet {
 
             if (proposal.proposalType == ProposalType.WITHDRAWAL) {
                 _executeWithdrawal(_proposalId);
+                // Liberar fondos reservados después de ejecutar el retiro
+                reservedFunds -= proposal.amount;
             } else if (proposal.proposalType == ProposalType.ADD_MEMBER) {
                 _executeAddMember(_proposalId);
             }
@@ -190,6 +199,12 @@ contract CoperachaWallet {
         ) {
             // Todos votaron pero no se alcanzó la mayoría
             proposal.status = ProposalStatus.REJECTED;
+
+            // Liberar fondos reservados si es una propuesta de retiro rechazada
+            if (proposal.proposalType == ProposalType.WITHDRAWAL) {
+                reservedFunds -= proposal.amount;
+            }
+
             emit ProposalRejected(_proposalId);
         }
     }
@@ -224,6 +239,10 @@ contract CoperachaWallet {
         )
     {
         return (name, members, address(this).balance, proposalCounter);
+    }
+
+    function getAvailableBalance() external view returns (uint256) {
+        return address(this).balance - reservedFunds;
     }
 
     function getProposalInfo(

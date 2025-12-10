@@ -28,6 +28,7 @@ export interface CoperachaWalletInterface extends Interface {
     nameOrSignature:
       | "deposit"
       | "factory"
+      | "getAvailableBalance"
       | "getBalance"
       | "getMemberCount"
       | "getMembers"
@@ -41,6 +42,7 @@ export interface CoperachaWalletInterface extends Interface {
       | "proposals"
       | "proposeAddMember"
       | "proposeWithdrawal"
+      | "reservedFunds"
       | "vote"
   ): FunctionFragment;
 
@@ -57,6 +59,10 @@ export interface CoperachaWalletInterface extends Interface {
 
   encodeFunctionData(functionFragment: "deposit", values?: undefined): string;
   encodeFunctionData(functionFragment: "factory", values?: undefined): string;
+  encodeFunctionData(
+    functionFragment: "getAvailableBalance",
+    values?: undefined
+  ): string;
   encodeFunctionData(
     functionFragment: "getBalance",
     values?: undefined
@@ -107,12 +113,20 @@ export interface CoperachaWalletInterface extends Interface {
     values: [string, AddressLike, BigNumberish]
   ): string;
   encodeFunctionData(
+    functionFragment: "reservedFunds",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
     functionFragment: "vote",
     values: [BigNumberish, boolean]
   ): string;
 
   decodeFunctionResult(functionFragment: "deposit", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "factory", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "getAvailableBalance",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "getBalance", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "getMemberCount",
@@ -142,6 +156,10 @@ export interface CoperachaWalletInterface extends Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "proposeWithdrawal",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "reservedFunds",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "vote", data: BytesLike): Result;
@@ -300,6 +318,8 @@ export interface CoperachaWallet extends BaseContract {
 
   factory: TypedContractMethod<[], [string], "view">;
 
+  getAvailableBalance: TypedContractMethod<[], [bigint], "view">;
+
   getBalance: TypedContractMethod<[], [bigint], "view">;
 
   getMemberCount: TypedContractMethod<[], [bigint], "view">;
@@ -407,6 +427,8 @@ export interface CoperachaWallet extends BaseContract {
     "nonpayable"
   >;
 
+  reservedFunds: TypedContractMethod<[], [bigint], "view">;
+
   vote: TypedContractMethod<
     [_proposalId: BigNumberish, _inFavor: boolean],
     [void],
@@ -423,6 +445,9 @@ export interface CoperachaWallet extends BaseContract {
   getFunction(
     nameOrSignature: "factory"
   ): TypedContractMethod<[], [string], "view">;
+  getFunction(
+    nameOrSignature: "getAvailableBalance"
+  ): TypedContractMethod<[], [bigint], "view">;
   getFunction(
     nameOrSignature: "getBalance"
   ): TypedContractMethod<[], [bigint], "view">;
@@ -543,6 +568,9 @@ export interface CoperachaWallet extends BaseContract {
     [bigint],
     "nonpayable"
   >;
+  getFunction(
+    nameOrSignature: "reservedFunds"
+  ): TypedContractMethod<[], [bigint], "view">;
   getFunction(
     nameOrSignature: "vote"
   ): TypedContractMethod<

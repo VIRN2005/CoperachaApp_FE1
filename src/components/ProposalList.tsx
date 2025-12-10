@@ -4,6 +4,7 @@ import { useAccount } from "wagmi";
 import { Card, CardContent } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
+import { CopyableAddress } from "./CopyableAddress";
 import {
   ThumbsUp,
   ThumbsDown,
@@ -82,13 +83,29 @@ function ProposalItem({
         description: "Tu voto ha sido contabilizado",
       });
       refetch(); // Refrescar datos de la propuesta
-    } else if (error) {
-      toast.error("Error al votar", {
-        id: `vote-${proposalId}`,
-        description: error?.message || "No se pudo registrar el voto",
-      });
     }
-  }, [isPending, isConfirming, isSuccess, error, proposalId, refetch]);
+  }, [isPending, isConfirming, isSuccess, proposalId, refetch]);
+
+  // Manejar errores por separado
+  useEffect(() => {
+    if (error) {
+      toast.dismiss(`vote-${proposalId}`);
+
+      const errorMessage = error.message || String(error);
+      if (
+        errorMessage.includes("User rejected") ||
+        errorMessage.includes("user rejected")
+      ) {
+        toast.error("Voto cancelado", {
+          description: "Rechazaste la transacción en tu wallet",
+        });
+      } else {
+        toast.error("Error al votar", {
+          description: "Ocurrió un error. Por favor intenta de nuevo.",
+        });
+      }
+    }
+  }, [error, proposalId]);
 
   if (isLoading || !proposalData) {
     return (
@@ -200,11 +217,13 @@ function ProposalItem({
                     ({parseFloat(amountInEth).toFixed(4)} ETH)
                   </span>
                 </div>
-                <div className="px-4 py-2 bg-white/60 backdrop-blur-sm rounded-xl border border-white/50">
+                <div className="px-4 py-2 bg-white/60 backdrop-blur-sm rounded-xl border border-white/50 flex items-center gap-1">
                   <span className="text-sm text-gray-500">Para: </span>
-                  <span className="text-sm text-gray-900 font-mono">
-                    {recipient.slice(0, 10)}...
-                  </span>
+                  <CopyableAddress
+                    address={recipient}
+                    showFull={false}
+                    className="text-gray-900 text-sm"
+                  />
                 </div>
               </div>
             </div>

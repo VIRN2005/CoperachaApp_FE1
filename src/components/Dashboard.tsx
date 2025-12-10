@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "./ui/button";
 import { Wallet, Users, Plus, LogOut, AlertCircle } from "lucide-react";
 import { useAccount, useDisconnect, useSwitchChain } from "wagmi";
+import { CopyableAddress } from "./CopyableAddress";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { PersonalWallet } from "./PersonalWallet";
 import { CommunityWallets } from "./CommunityWallets";
@@ -132,9 +133,13 @@ export function Dashboard({ onLogout }: DashboardProps) {
             <div className="flex items-center gap-4">
               <div className="hidden md:flex items-center gap-3 px-5 py-3 bg-white/80 backdrop-blur-sm rounded-2xl border border-blue-200/50 shadow-lg">
                 <div className="w-3 h-3 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full animate-pulse shadow-lg shadow-green-500/50"></div>
-                <span className="text-sm text-gray-700 font-mono">
-                  {address?.slice(0, 6)}...{address?.slice(-4)}
-                </span>
+                {address && (
+                  <CopyableAddress
+                    address={address}
+                    showFull={false}
+                    className="text-gray-700"
+                  />
+                )}
               </div>
               <Button
                 variant="ghost"

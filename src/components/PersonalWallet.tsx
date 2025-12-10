@@ -10,6 +10,7 @@ import {
 import { useAccount, useBalance } from "wagmi";
 import { formatEther } from "viem";
 import { useEthPrice, formatEthToUSD } from "../hooks/useEthPrice";
+import { useUserCoperachas } from "../hooks/useCoperacha";
 
 export function PersonalWallet() {
   const { address } = useAccount();
@@ -17,6 +18,7 @@ export function PersonalWallet() {
   const { data: balanceData } = useBalance({
     address: address,
   });
+  const { data: userCoperachas } = useUserCoperachas(address);
 
   const balanceInEth = balanceData
     ? parseFloat(formatEther(balanceData.value))
@@ -94,7 +96,7 @@ export function PersonalWallet() {
               <div className="flex justify-between items-center p-3 bg-white/60 rounded-xl">
                 <span className="text-gray-600">Billeteras comunitarias</span>
                 <span className="px-3 py-1 bg-gradient-to-r from-blue-500 to-emerald-500 text-white rounded-lg text-xs shadow-lg">
-                  2 activas
+                  {userCoperachas?.length || 0} activas
                 </span>
               </div>
             </div>

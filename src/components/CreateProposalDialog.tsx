@@ -70,13 +70,29 @@ export function CreateProposalDialog({
       if (onSuccess) {
         onSuccess();
       }
-    } else if (error) {
-      toast.error("Error al crear propuesta", {
-        id: "proposal-tx",
-        description: error?.message || "Transacción rechazada",
-      });
     }
-  }, [isPending, isConfirming, isSuccess, error, title, onSuccess]);
+  }, [isPending, isConfirming, isSuccess, title, onSuccess]);
+
+  // Manejar errores por separado
+  useEffect(() => {
+    if (error) {
+      toast.dismiss("proposal-tx");
+
+      const errorMessage = error.message || String(error);
+      if (
+        errorMessage.includes("User rejected") ||
+        errorMessage.includes("user rejected")
+      ) {
+        toast.error("Transacción cancelada", {
+          description: "Rechazaste la transacción en tu wallet",
+        });
+      } else {
+        toast.error("Error al crear propuesta", {
+          description: "Ocurrió un error. Por favor intenta de nuevo.",
+        });
+      }
+    }
+  }, [error]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

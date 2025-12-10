@@ -52,13 +52,29 @@ export function DepositDialog({ vaultAddress, onSuccess }: DepositDialogProps) {
       if (onSuccess) {
         onSuccess();
       }
-    } else if (error) {
-      toast.error("Error al depositar", {
-        id: "deposit-tx",
-        description: error?.message || "Transacción rechazada",
-      });
     }
-  }, [isPending, isConfirming, isSuccess, error, amount, onSuccess]);
+  }, [isPending, isConfirming, isSuccess, amount, onSuccess]);
+
+  // Manejar errores por separado
+  useEffect(() => {
+    if (error) {
+      toast.dismiss("deposit-tx");
+
+      const errorMessage = error.message || String(error);
+      if (
+        errorMessage.includes("User rejected") ||
+        errorMessage.includes("user rejected")
+      ) {
+        toast.error("Transacción cancelada", {
+          description: "Rechazaste la transacción en tu wallet",
+        });
+      } else {
+        toast.error("Error al depositar", {
+          description: "Ocurrió un error. Por favor intenta de nuevo.",
+        });
+      }
+    }
+  }, [error]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

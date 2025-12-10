@@ -16,11 +16,11 @@ export enum ProposalStatus {
 export const CONTRACTS = {
   // Sepolia Testnet
   11155111: {
-    CoperachaFactory: '0x0000000000000000000000000000000000000000' as Address, // ⚠️ Reemplazar con la dirección real después del deploy
+    CoperachaFactory: '0x0000000000000000000000000000000000000000' as Address, 
   },
   // Hardhat Local
   31337: {
-    CoperachaFactory: '0x9E545E3C0baAB3E08CdfD552C960A1050f373042' as Address, // Dirección por defecto de Hardhat
+    CoperachaFactory: '0x5FbDB2315678afecb367f032d93F642f64180aa3' as Address,
   },
   // Localhost
   1337: {

@@ -68,9 +68,18 @@
             "dev": "vite",
             "build": "vite build",
             "node": "hardhat node",
-            "deploy": "hardhat run scripts/deploy.ts --network localhost",
-            "deploy:sepolia": "hardhat run scripts/deploy.ts --network sepolia",
             "compile": "hardhat compile",
-            "test": "hardhat test"
+            "test": "hardhat test",
+            "deploy": "hardhat run scripts/deploy.ts --network localhost",
+            "deploy:mainnet": "hardhat run scripts/deploy.ts --network mainnet",
+            "deploy:sepolia": "hardhat run scripts/deploy.ts --network sepolia",
+            "deploy:base": "hardhat run scripts/deploy.ts --network base",
+            "deploy:base-sepolia": "hardhat run scripts/deploy.ts --network baseSepolia",
+            "deploy:arbitrum": "hardhat run scripts/deploy.ts --network arbitrum",
+            "deploy:arbitrum-sepolia": "hardhat run scripts/deploy.ts --network arbitrumSepolia",
+            "deploy:optimism": "hardhat run scripts/deploy.ts --network optimism",
+            "deploy:optimism-sepolia": "hardhat run scripts/deploy.ts --network optimismSepolia",
+            "deploy:polygon": "hardhat run scripts/deploy.ts --network polygon",
+            "deploy:polygon-amoy": "hardhat run scripts/deploy.ts --network polygonAmoy"
       }
 }

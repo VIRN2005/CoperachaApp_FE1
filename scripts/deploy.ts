@@ -19,30 +19,41 @@ async function main() {
   const factoryAddress = await factory.getAddress();
   console.log('✅ CoperachaFactory desplegado en:', factoryAddress);
 
-  // 3. Crear una Coperacha de prueba
-  console.log('\n🧪 Creando Coperacha de prueba...');
-  
-  const [deployer, member1, member2] = await ethers.getSigners();
-  const members = [deployer.address, member1.address, member2.address];
-  
-  const tx = await factory.createVault('Familia Test', members);
-  const receipt = await tx.wait();
-  
-  // Obtener la dirección de la nueva Coperacha del evento
-  const event = receipt?.logs.find((log: any) => {
-    try {
-      const parsed = factory.interface.parseLog(log);
-      return parsed?.name === 'VaultCreated';
-    } catch {
-      return false;
-    }
-  });
-  
+  // 3. Crear una Coperacha de prueba (solo en redes locales)
+  const signers = await ethers.getSigners();
+  const deployer = signers[0];
   let vaultAddress;
-  if (event) {
-    const parsed = factory.interface.parseLog(event);
-    vaultAddress = parsed?.args[0];
-    console.log('✅ Coperacha de prueba creada en:', vaultAddress);
+  let members: string[] = [];
+
+  // Solo crear vault de prueba si tenemos múltiples signers (red local)
+  if (signers.length >= 3) {
+    console.log('\n🧪 Creando Coperacha de prueba...');
+    
+    const member1 = signers[1];
+    const member2 = signers[2];
+    members = [deployer.address, member1.address, member2.address];
+    
+    const tx = await factory.createVault('Familia Test', members);
+    const receipt = await tx.wait();
+    
+    // Obtener la dirección de la nueva Coperacha del evento
+    const event = receipt?.logs.find((log: any) => {
+      try {
+        const parsed = factory.interface.parseLog(log);
+        return parsed?.name === 'VaultCreated';
+      } catch {
+        return false;
+      }
+    });
+    
+    if (event) {
+      const parsed = factory.interface.parseLog(event);
+      vaultAddress = parsed?.args[0];
+      console.log('✅ Coperacha de prueba creada en:', vaultAddress);
+    }
+  } else {
+    console.log('\n⚠️  Red pública detectada - Crea tu primera Coperacha desde la UI');
+    members = [deployer.address];
   }
 
   // 4. Actualizar addresses.ts automáticamente

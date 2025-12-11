@@ -2,16 +2,57 @@
 
 import { ReactNode } from "react";
 import { WagmiProvider, createConfig, http } from "wagmi";
-import { mainnet, sepolia, hardhat, localhost } from "wagmi/chains";
+import type { Chain } from "wagmi/chains";
+import {
+  mainnet,
+  sepolia,
+  hardhat,
+  localhost,
+  base,
+  baseSepolia,
+  arbitrum,
+  arbitrumSepolia,
+  optimism,
+  optimismSepolia,
+  polygon,
+  polygonAmoy,
+} from "wagmi/chains";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RainbowKitProvider, getDefaultConfig } from "@rainbow-me/rainbowkit";
 import "@rainbow-me/rainbowkit/styles.css";
+import { getSupportedChains } from "../contracts/addresses";
 
-// Configuración de wagmi con RainbowKit
+// Mapeo de chainId a objeto Chain de wagmi
+const chainMap: Record<number, Chain> = {
+  1: mainnet,
+  11155111: sepolia,
+  8453: base,
+  84532: baseSepolia,
+  42161: arbitrum,
+  421614: arbitrumSepolia,
+  10: optimism,
+  11155420: optimismSepolia,
+  137: polygon,
+  80002: polygonAmoy,
+  31337: hardhat,
+  1337: localhost,
+};
+
+// Obtener solo las chains donde hay contratos desplegados
+const supportedChainIds = getSupportedChains().map((c) => c.chainId);
+const supportedChains = supportedChainIds
+  .map((chainId) => chainMap[chainId])
+  .filter(Boolean) as [Chain, ...Chain[]]; // RainbowKit requiere al menos 1 chain
+
+// Fallback si no hay chains configuradas (no debería pasar)
+const chains: [Chain, ...Chain[]] =
+  supportedChains.length > 0 ? supportedChains : [hardhat];
+
+// Configuración de wagmi con RainbowKit - Solo redes con contratos desplegados
 const config = getDefaultConfig({
   appName: "Coperacha App",
   projectId: import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || "demo_project_id",
-  chains: [sepolia, hardhat, localhost, mainnet],
+  chains,
   ssr: false,
 });
 

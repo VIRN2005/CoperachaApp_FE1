@@ -11,6 +11,7 @@ import { WalletDetail } from "./WalletDetail";
 import { useUserCoperachas } from "../hooks/useCoperacha";
 import { Address } from "viem";
 import { Alert, AlertDescription } from "./ui/alert";
+import { isSupportedChain, getSupportedChains } from "../contracts/addresses";
 
 export interface CommunityWallet {
   id: string;
@@ -66,16 +67,20 @@ export function Dashboard({ onLogout }: DashboardProps) {
   const { data: userVaults, isLoading: isLoadingVaults } =
     useUserCoperachas(address);
 
-  // Verificar si está en la red correcta (Hardhat local)
-  const isWrongNetwork = chain?.id !== 31337 && chain?.id !== 1337;
+  // Verificar si está en una red con contratos desplegados
+  const isWrongNetwork = chain?.id ? !isSupportedChain(chain.id) : false;
+  const supportedChains = getSupportedChains();
+  const primaryChain = supportedChains[0]; // Primera red con contratos desplegados
 
   const handleLogout = () => {
     disconnect();
     onLogout();
   };
 
-  const handleSwitchToLocal = () => {
-    switchChain({ chainId: 31337 });
+  const handleSwitchToSupportedNetwork = () => {
+    if (primaryChain) {
+      switchChain({ chainId: primaryChain.chainId });
+    }
   };
 
   const handleVote = (
@@ -168,24 +173,29 @@ export function Dashboard({ onLogout }: DashboardProps) {
             <Alert className="mb-6 border-2 border-orange-500 bg-orange-50">
               <AlertCircle className="h-5 w-5 text-orange-600" />
               <AlertDescription className="ml-2">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-3">
                   <div>
                     <p className="font-semibold text-orange-900">
-                      Red incorrecta detectada
+                      Red no soportada
                     </p>
                     <p className="text-sm text-orange-700 mt-1">
                       Estás conectado a{" "}
-                      <strong>{chain?.name || "red desconocida"}</strong>. Tus
-                      contratos están en Hardhat Local. Cambia de red para usar
-                      la app.
+                      <strong>{chain?.name || "red desconocida"}</strong>. Los
+                      contratos de Coperacha no están desplegados en esta red.
+                    </p>
+                    <p className="text-sm text-orange-700 mt-2">
+                      <strong>Redes disponibles:</strong>{" "}
+                      {supportedChains.map((c) => c.name).join(", ")}
                     </p>
                   </div>
-                  <Button
-                    onClick={handleSwitchToLocal}
-                    className="bg-orange-600 hover:bg-orange-700 text-white ml-4"
-                  >
-                    Cambiar a Hardhat
-                  </Button>
+                  {primaryChain && (
+                    <Button
+                      onClick={handleSwitchToSupportedNetwork}
+                      className="bg-orange-600 hover:bg-orange-700 text-white w-fit"
+                    >
+                      Cambiar a {primaryChain.name}
+                    </Button>
+                  )}
                 </div>
               </AlertDescription>
             </Alert>

@@ -26,6 +26,7 @@ import {
   useCoperachaEvents,
 } from "../hooks/useCoperacha";
 import { useEthPrice, formatEthToUSD } from "../hooks/useEthPrice";
+import { getTransactionUrl, getBlockExplorer } from "../contracts/addresses";
 
 interface WalletDetailProps {
   vaultAddress: Address;
@@ -34,8 +35,13 @@ interface WalletDetailProps {
 
 export function WalletDetail({ vaultAddress, onBack }: WalletDetailProps) {
   const [activeTab, setActiveTab] = useState("proposals");
-  const { address: userAddress } = useAccount();
+  const { address: userAddress, chain } = useAccount();
   const ethPrice = useEthPrice();
+
+  // Obtener explorador de bloques de la red actual
+  const blockExplorer = chain?.id
+    ? getBlockExplorer(chain.id)
+    : { name: "Explorer", url: "#" };
 
   // Obtener datos del contrato
   const {
@@ -517,14 +523,23 @@ export function WalletDetail({ vaultAddress, onBack }: WalletDetailProps) {
                                   minute: "2-digit",
                                 })}
                               </span>
-                              <a
-                                href={`https://etherscan.io/tx/${event.transactionHash}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-blue-600 hover:text-blue-800 hover:underline"
-                              >
-                                Ver en Etherscan ↗
-                              </a>
+                              {chain?.id &&
+                                getTransactionUrl(
+                                  chain.id,
+                                  event.transactionHash
+                                ) !== "#" && (
+                                  <a
+                                    href={getTransactionUrl(
+                                      chain.id,
+                                      event.transactionHash
+                                    )}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-blue-600 hover:text-blue-800 hover:underline"
+                                  >
+                                    Ver en {blockExplorer.name} ↗
+                                  </a>
+                                )}
                             </div>
                           </div>
                         </div>

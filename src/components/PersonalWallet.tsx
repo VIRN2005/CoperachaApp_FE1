@@ -11,9 +11,10 @@ import { useAccount, useBalance } from "wagmi";
 import { formatEther } from "viem";
 import { useEthPrice, formatEthToUSD } from "../hooks/useEthPrice";
 import { useUserCoperachas } from "../hooks/useCoperacha";
+import { getSupportedChains } from "../contracts/addresses";
 
 export function PersonalWallet() {
-  const { address } = useAccount();
+  const { address, chain } = useAccount();
   const ethPrice = useEthPrice();
   const { data: balanceData } = useBalance({
     address: address,
@@ -23,6 +24,13 @@ export function PersonalWallet() {
   const balanceInEth = balanceData
     ? parseFloat(formatEther(balanceData.value))
     : 0;
+
+  // Obtener información de las redes soportadas
+  const supportedChains = getSupportedChains();
+  const currentNetwork =
+    supportedChains.find((c) => c.chainId === chain?.id)?.name ||
+    chain?.name ||
+    "Desconocida";
 
   return (
     <div className="relative">
@@ -89,8 +97,8 @@ export function PersonalWallet() {
               <div className="flex justify-between items-center p-3 bg-white/60 rounded-xl">
                 <span className="text-gray-600">Red</span>
                 <span className="text-gray-900 flex items-center gap-2">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                  Ethereum
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                  {currentNetwork}
                 </span>
               </div>
               <div className="flex justify-between items-center p-3 bg-white/60 rounded-xl">

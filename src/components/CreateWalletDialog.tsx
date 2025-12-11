@@ -31,6 +31,21 @@ export function CreateWalletDialog({}: CreateWalletDialogProps) {
     useCreateCoperacha();
   const isLoading = isPending || isConfirming;
 
+  // Actualizar toast según el estado
+  useEffect(() => {
+    if (isPending) {
+      toast.loading("Confirma la transacción en tu wallet", {
+        id: "create-tx",
+        description: `Red: ${chain?.name || "Desconocida"}`,
+      });
+    } else if (isConfirming && hash) {
+      toast.loading("Creando Coperacha...", {
+        id: "create-tx",
+        description: "Esperando confirmación en el blockchain",
+      });
+    }
+  }, [isPending, isConfirming, hash, chain]);
+
   // Manejar éxito de la transacción
   useEffect(() => {
     if (isSuccess && hash) {
@@ -43,6 +58,7 @@ export function CreateWalletDialog({}: CreateWalletDialogProps) {
       setName("");
       setDescription("");
       setMembers([]);
+      setMemberInput("");
       setOpen(false);
     }
   }, [isSuccess, hash, name]);
@@ -57,20 +73,46 @@ export function CreateWalletDialog({}: CreateWalletDialogProps) {
 
       // Determinar el tipo de error
       const errorMessage = error.message || String(error);
+
       if (
         errorMessage.includes("User rejected") ||
-        errorMessage.includes("user rejected")
+        errorMessage.includes("user rejected") ||
+        errorMessage.includes("rejected the request")
       ) {
         toast.error("Transacción cancelada", {
           description: "Rechazaste la transacción en tu wallet",
         });
+      } else if (
+        errorMessage.includes("insufficient funds") ||
+        errorMessage.includes("gas")
+      ) {
+        toast.error("Fondos insuficientes", {
+          description: `No tienes suficiente ${
+            chain?.nativeCurrency?.symbol || "ETH"
+          } para pagar el gas. Necesitas fondos en ${
+            chain?.name || "esta red"
+          }.`,
+          duration: 8000,
+        });
+      } else if (errorMessage.includes("At least 2 members required")) {
+        toast.error("Miembros insuficientes", {
+          description: "Debes agregar al menos 2 miembros (incluyéndote)",
+        });
+      } else if (errorMessage.includes("Creator must be in the members list")) {
+        toast.error("Error de configuración", {
+          description: "Tu dirección debe estar incluida en los miembros",
+        });
       } else {
         toast.error("Error al crear Coperacha", {
-          description: "Ocurrió un error. Por favor intenta de nuevo.",
+          description:
+            errorMessage.length > 100
+              ? "Revisa la consola para más detalles"
+              : errorMessage,
+          duration: 6000,
         });
       }
     }
-  }, [error]);
+  }, [error, chain]);
 
   const handleAddMember = () => {
     const address = memberInput.trim();
@@ -118,21 +160,31 @@ export function CreateWalletDialog({}: CreateWalletDialogProps) {
       return;
     }
 
-    // Incluir al usuario actual en la lista de miembros si no está
-    const allMembers =
-      userAddress && !members.includes(userAddress)
-        ? [userAddress, ...members]
-        : members;
+    // Incluir al usuario actual en la lista de miembros
+    let allMembers: string[] = [...members];
+    if (
+      userAddress &&
+      !members.some((m) => m.toLowerCase() === userAddress.toLowerCase())
+    ) {
+      allMembers = [userAddress, ...members];
+    }
+
+    // Validar que hay al menos 2 miembros
+    if (allMembers.length < 2) {
+      toast.error("Miembros insuficientes", {
+        description:
+          "Debes agregar al menos 2 miembros en total (incluyéndote)",
+      });
+      return;
+    }
 
     console.log("=== CREANDO COPERACHA ===");
     console.log("Nombre:", name);
+    console.log("Miembros totales:", allMembers.length);
     console.log("Miembros:", allMembers);
     console.log("Chain:", chain?.id, chain?.name);
     console.log("Usuario:", userAddress);
-
-    toast.loading("Confirma la transacción en tu wallet", {
-      id: "create-tx",
-    });
+    console.log("Balance:", "Verifica que tengas ETH en", chain?.name);
 
     createCoperacha(name, allMembers as `0x${string}`[]);
   };

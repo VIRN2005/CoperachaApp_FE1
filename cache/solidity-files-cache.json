@@ -1,9 +1,9 @@
 {
   "_format": "hh-sol-cache-2",
   "files": {
-    "C:\\Users\\Oliver Iraheta\\Documents\\05 Blockchain\\CoperachaApp_FE1\\contracts\\CoperachaFactory.sol": {
-      "lastModificationDate": 1764623369434,
-      "contentHash": "80699923882d3eee32714b61278b67c6",
+    "C:\\Users\\Oliver Iraheta\\Documents\\06 clases\\23 Vanguardia\\CoperachaApp_FE1\\contracts\\CoperachaFactory.sol": {
+      "lastModificationDate": 1765747514320,
+      "contentHash": "7ae5502cb2e1b19e55e47c02a49d65e2",
       "sourceName": "contracts/CoperachaFactory.sol",
       "solcConfig": {
         "version": "0.8.24",
@@ -20,7 +20,8 @@
                 "evm.bytecode",
                 "evm.deployedBytecode",
                 "evm.methodIdentifiers",
-                "metadata"
+                "metadata",
+                "storageLayout"
               ],
               "": [
                 "ast"
@@ -39,9 +40,9 @@
         "CoperachaFactory"
       ]
     },
-    "C:\\Users\\Oliver Iraheta\\Documents\\05 Blockchain\\CoperachaApp_FE1\\contracts\\CoperachaWallet.sol": {
-      "lastModificationDate": 1765395349693,
-      "contentHash": "2e84e7fa8b03f72c0b8827b260f2cab3",
+    "C:\\Users\\Oliver Iraheta\\Documents\\06 clases\\23 Vanguardia\\CoperachaApp_FE1\\contracts\\CoperachaWallet.sol": {
+      "lastModificationDate": 1765747489061,
+      "contentHash": "8ef55915617a411253120f5ac8e87314",
       "sourceName": "contracts/CoperachaWallet.sol",
       "solcConfig": {
         "version": "0.8.24",
@@ -58,7 +59,8 @@
                 "evm.bytecode",
                 "evm.deployedBytecode",
                 "evm.methodIdentifiers",
-                "metadata"
+                "metadata",
+                "storageLayout"
               ],
               "": [
                 "ast"
@@ -72,7 +74,8 @@
         "^0.8.24"
       ],
       "artifacts": [
-        "CoperachaWallet"
+        "CoperachaWallet",
+        "ICoperachaFactory"
       ]
     }
   }

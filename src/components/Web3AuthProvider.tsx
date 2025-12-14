@@ -22,6 +22,31 @@ import { RainbowKitProvider, getDefaultConfig } from "@rainbow-me/rainbowkit";
 import "@rainbow-me/rainbowkit/styles.css";
 import { getSupportedChains } from "../contracts/addresses";
 
+// Crear chain personalizada para Tenderly Virtual Mainnet
+const tenderlyVirtualMainnet: Chain = {
+  id: 73571,
+  name: "Tenderly Virtual Mainnet",
+  nativeCurrency: {
+    decimals: 18,
+    name: "Virtual ETH",
+    symbol: "VETH",
+  },
+  rpcUrls: {
+    default: {
+      http: [
+        "https://virtual.mainnet.eu.rpc.tenderly.co/90ce4a22-5494-4568-8d4b-a1530aff5790",
+      ],
+    },
+  },
+  blockExplorers: {
+    default: {
+      name: "Tenderly",
+      url: "https://virtual.mainnet.eu.rpc.tenderly.co/7042ed98-361d-42ee-a417-b6f62b0e4691",
+    },
+  },
+  testnet: true,
+};
+
 // Mapeo de chainId a objeto Chain de wagmi
 const chainMap: Record<number, Chain> = {
   1: mainnet,
@@ -36,6 +61,7 @@ const chainMap: Record<number, Chain> = {
   80002: polygonAmoy,
   31337: hardhat,
   1337: localhost,
+  73571: tenderlyVirtualMainnet,
 };
 
 // Obtener solo las chains donde hay contratos desplegados

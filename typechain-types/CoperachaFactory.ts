@@ -36,10 +36,13 @@ export interface CoperachaFactoryInterface extends Interface {
       | "getVaultsByRange"
       | "isValidVault"
       | "isVault"
+      | "registerMemberToVault"
       | "userVaults"
   ): FunctionFragment;
 
-  getEvent(nameOrSignatureOrTopic: "VaultCreated"): EventFragment;
+  getEvent(
+    nameOrSignatureOrTopic: "MemberAddedToVault" | "VaultCreated"
+  ): EventFragment;
 
   encodeFunctionData(
     functionFragment: "allVaults",
@@ -82,6 +85,10 @@ export interface CoperachaFactoryInterface extends Interface {
     values: [AddressLike]
   ): string;
   encodeFunctionData(
+    functionFragment: "registerMemberToVault",
+    values: [AddressLike]
+  ): string;
+  encodeFunctionData(
     functionFragment: "userVaults",
     values: [AddressLike, BigNumberish]
   ): string;
@@ -120,7 +127,24 @@ export interface CoperachaFactoryInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "isVault", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "registerMemberToVault",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "userVaults", data: BytesLike): Result;
+}
+
+export namespace MemberAddedToVaultEvent {
+  export type InputTuple = [vaultAddress: AddressLike, member: AddressLike];
+  export type OutputTuple = [vaultAddress: string, member: string];
+  export interface OutputObject {
+    vaultAddress: string;
+    member: string;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
 }
 
 export namespace VaultCreatedEvent {
@@ -237,6 +261,12 @@ export interface CoperachaFactory extends BaseContract {
 
   isVault: TypedContractMethod<[arg0: AddressLike], [boolean], "view">;
 
+  registerMemberToVault: TypedContractMethod<
+    [_member: AddressLike],
+    [void],
+    "nonpayable"
+  >;
+
   userVaults: TypedContractMethod<
     [arg0: AddressLike, arg1: BigNumberish],
     [string],
@@ -297,6 +327,9 @@ export interface CoperachaFactory extends BaseContract {
     nameOrSignature: "isVault"
   ): TypedContractMethod<[arg0: AddressLike], [boolean], "view">;
   getFunction(
+    nameOrSignature: "registerMemberToVault"
+  ): TypedContractMethod<[_member: AddressLike], [void], "nonpayable">;
+  getFunction(
     nameOrSignature: "userVaults"
   ): TypedContractMethod<
     [arg0: AddressLike, arg1: BigNumberish],
@@ -304,6 +337,13 @@ export interface CoperachaFactory extends BaseContract {
     "view"
   >;
 
+  getEvent(
+    key: "MemberAddedToVault"
+  ): TypedContractEvent<
+    MemberAddedToVaultEvent.InputTuple,
+    MemberAddedToVaultEvent.OutputTuple,
+    MemberAddedToVaultEvent.OutputObject
+  >;
   getEvent(
     key: "VaultCreated"
   ): TypedContractEvent<
@@ -313,6 +353,17 @@ export interface CoperachaFactory extends BaseContract {
   >;
 
   filters: {
+    "MemberAddedToVault(address,address)": TypedContractEvent<
+      MemberAddedToVaultEvent.InputTuple,
+      MemberAddedToVaultEvent.OutputTuple,
+      MemberAddedToVaultEvent.OutputObject
+    >;
+    MemberAddedToVault: TypedContractEvent<
+      MemberAddedToVaultEvent.InputTuple,
+      MemberAddedToVaultEvent.OutputTuple,
+      MemberAddedToVaultEvent.OutputObject
+    >;
+
     "VaultCreated(address,string,address[],address,uint256)": TypedContractEvent<
       VaultCreatedEvent.InputTuple,
       VaultCreatedEvent.OutputTuple,

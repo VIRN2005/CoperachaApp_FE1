@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
+interface ICoperachaFactory {
+    function registerMemberToVault(address _member) external;
+}
+
 contract CoperachaWallet {
     enum ProposalType {
         WITHDRAWAL,
@@ -224,6 +228,9 @@ contract CoperachaWallet {
 
         members.push(proposal.newMember);
         isMember[proposal.newMember] = true;
+
+        // Notificar al Factory para que actualice userVaults
+        ICoperachaFactory(factory).registerMemberToVault(proposal.newMember);
 
         emit MemberAdded(proposal.newMember);
     }

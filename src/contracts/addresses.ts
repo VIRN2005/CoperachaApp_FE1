@@ -22,6 +22,10 @@ export const CONTRACTS = {
   84532: {
     CoperachaFactory: '0x5c90927EAb2fD25a07Bdc02E577EeffA4453b7a0' as Address,
   },
+  // Tenderly Virtual Mainnet
+  73571: {
+    CoperachaFactory: '0xcC089ddA7CEe01285F3A8CE500cc3A0fAB5Af01F' as Address,
+  },
   // Hardhat Local
   31337: {
     CoperachaFactory: '0xA51c1fc2f0D1a1b8494Ed1FE312d7C3a78Ed91C0' as Address,
@@ -46,6 +50,7 @@ const BLOCK_EXPLORERS: Record<number, { name: string; url: string }> = {
   11155420: { name: 'Optimism Explorer', url: 'https://sepolia-optimistic.etherscan.io' },
   137: { name: 'PolygonScan', url: 'https://polygonscan.com' },
   80002: { name: 'PolygonScan', url: 'https://amoy.polygonscan.com' },
+  73571: { name: 'Tenderly', url: 'https://virtual.mainnet.eu.rpc.tenderly.co/7042ed98-361d-42ee-a417-b6f62b0e4691' },
   31337: { name: 'Local Explorer', url: '#' },
   1337: { name: 'Local Explorer', url: '#' },
 };

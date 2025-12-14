@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { ProposalList } from "./ProposalList";
 import { CreateProposalDialog } from "./CreateProposalDialog";
+import { AddMemberProposalDialog } from "./AddMemberProposalDialog";
 import { DepositDialog } from "./DepositDialog";
 import { CopyableAddress } from "./CopyableAddress";
 import { Address, formatEther } from "viem";
@@ -58,8 +59,11 @@ export function WalletDetail({ vaultAddress, onBack }: WalletDetailProps) {
     useCoperachaAvailableBalance(vaultAddress);
   const { data: reservedFunds, refetch: refetchReservedFunds } =
     useCoperachaReservedFunds(vaultAddress);
-  const { data: members, isLoading: isLoadingMembers } =
-    useCoperachaMembers(vaultAddress);
+  const {
+    data: members,
+    isLoading: isLoadingMembers,
+    refetch: refetchMembers,
+  } = useCoperachaMembers(vaultAddress);
   const {
     events,
     isLoading: isLoadingEvents,
@@ -87,6 +91,7 @@ export function WalletDetail({ vaultAddress, onBack }: WalletDetailProps) {
       refetchBalance();
       refetchAvailableBalance();
       refetchReservedFunds();
+      refetchMembers();
       refetchEvents();
 
       // Reset flag after a delay
@@ -99,6 +104,7 @@ export function WalletDetail({ vaultAddress, onBack }: WalletDetailProps) {
     refetchBalance,
     refetchAvailableBalance,
     refetchReservedFunds,
+    refetchMembers,
     refetchEvents,
   ]);
 
@@ -180,6 +186,11 @@ export function WalletDetail({ vaultAddress, onBack }: WalletDetailProps) {
           <div className="flex gap-3">
             <DepositDialog
               vaultAddress={vaultAddress}
+              onSuccess={refreshData}
+            />
+            <AddMemberProposalDialog
+              vaultAddress={vaultAddress}
+              currentMembers={memberList}
               onSuccess={refreshData}
             />
             <CreateProposalDialog
@@ -315,6 +326,8 @@ export function WalletDetail({ vaultAddress, onBack }: WalletDetailProps) {
             vaultAddress={vaultAddress}
             proposalCount={proposalCount}
             requiredVotes={requiredVotes}
+            totalMembers={memberList.length}
+            onProposalExecuted={refreshData}
           />
         </TabsContent>
 

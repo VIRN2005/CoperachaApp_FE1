@@ -6,20 +6,24 @@ import {
   ArrowUpFromLine,
   Sparkles,
   TrendingUp,
+  Loader2,
 } from "lucide-react";
 import { useAccount, useBalance } from "wagmi";
-import { formatEther } from "viem";
+import { formatEther, parseEther } from "viem";
 import { useEthPrice, formatEthToUSD } from "../hooks/useEthPrice";
 import { useUserCoperachas } from "../hooks/useCoperacha";
 import { getSupportedChains } from "../contracts/addresses";
+import { toast } from "sonner";
+import { useState } from "react";
 
 export function PersonalWallet() {
   const { address, chain } = useAccount();
-  const ethPrice = useEthPrice();
-  const { data: balanceData } = useBalance({
+  const [isDepositing, setIsDepositing] = useState(false);
+  const { data: balanceData, refetch: refetchBalance } = useBalance({
     address: address,
   });
   const { data: userCoperachas } = useUserCoperachas(address);
+  const ethPrice = useEthPrice();
 
   const balanceInEth = balanceData
     ? parseFloat(formatEther(balanceData.value))
@@ -31,6 +35,74 @@ export function PersonalWallet() {
     supportedChains.find((c) => c.chainId === chain?.id)?.name ||
     chain?.name ||
     "Desconocida";
+
+  const handleDeposit = async () => {
+    if (!address || !chain) {
+      toast.error("Wallet no conectada");
+      return;
+    }
+
+    // Solo permitir en Tenderly Virtual Testnet
+    if (chain.id !== 73571) {
+      toast.error(
+        "Esta función solo está disponible en Tenderly Virtual Testnet",
+        {
+          description: "Por favor cambia a la red Tenderly Virtual Mainnet",
+        }
+      );
+      return;
+    }
+
+    setIsDepositing(true);
+
+    try {
+      toast.loading("Procesando compra de ETH...", {
+        id: "deposit-eth",
+        description: "Solicitando fondos de prueba",
+      });
+
+      const rpcUrl =
+        (import.meta as any).env?.VITE_TENDERLY_RPC_URL ||
+        "https://virtual.mainnet.eu.rpc.tenderly.co/90ce4a22-5494-4568-8d4b-a1530aff5790";
+
+      // Obtener balance actual en wei y sumar 1 ETH
+      const currentWei = balanceData?.value ?? 0n;
+      const newWei = currentWei + parseEther("1");
+
+      const response = await fetch(rpcUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          method: "tenderly_setBalance",
+          params: [address, "0x" + newWei.toString(16)],
+          id: 1,
+        }),
+      });
+
+      const data = await response.json();
+      if (data.error) {
+        throw new Error(data.error.message || "Error al fondear cuenta");
+      }
+
+      await refetchBalance();
+
+      toast.success("¡ETH depositado con éxito!", {
+        id: "deposit-eth",
+        description: "Se ha agregado 1 ETH a tu billetera",
+      });
+    } catch (error: any) {
+      console.error("Error depositing ETH:", error);
+      toast.error("Error al depositar ETH", {
+        id: "deposit-eth",
+        description: error.message || "Intenta de nuevo",
+      });
+    } finally {
+      setIsDepositing(false);
+    }
+  };
 
   return (
     <div className="relative">
@@ -81,9 +153,22 @@ export function PersonalWallet() {
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <Button className="gap-2 bg-white hover:bg-gray-50 text-gray-900 border border-gray-200 shadow-lg hover:shadow-xl transition-all hover:scale-105 rounded-xl py-6">
-              <ArrowDownToLine className="w-5 h-5" />
-              <span>Recibir</span>
+            <Button
+              onClick={handleDeposit}
+              disabled={isDepositing}
+              className="gap-2 bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-700 hover:to-emerald-700 text-white shadow-lg shadow-blue-500/50 hover:shadow-xl transition-all hover:scale-105 rounded-xl py-6 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isDepositing ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span>Procesando...</span>
+                </>
+              ) : (
+                <>
+                  <ArrowDownToLine className="w-5 h-5" />
+                  <span>Depositar ETH</span>
+                </>
+              )}
             </Button>
             <Button className="gap-2 bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-700 hover:to-emerald-700 text-white shadow-lg shadow-blue-500/50 hover:shadow-xl transition-all hover:scale-105 rounded-xl py-6">
               <ArrowUpFromLine className="w-5 h-5" />

@@ -16,6 +16,11 @@ contract CoperachaFactory {
         uint256 timestamp
     );
 
+    event MemberAddedToVault(
+        address indexed vaultAddress,
+        address indexed member
+    );
+
     function createVault(
         string memory _name,
         address[] memory _members
@@ -107,5 +112,18 @@ contract CoperachaFactory {
 
     function getUserVaultCount(address _user) external view returns (uint256) {
         return userVaults[_user].length;
+    }
+
+    /**
+     * @notice Registra un nuevo miembro en un vault existente
+     * @dev Solo puede ser llamado por un vault válido
+     */
+    function registerMemberToVault(address _member) external {
+        require(isVault[msg.sender], "Only valid vaults can register members");
+        require(_member != address(0), "Invalid member address");
+
+        userVaults[_member].push(msg.sender);
+
+        emit MemberAddedToVault(msg.sender, _member);
     }
 }

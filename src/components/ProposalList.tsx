@@ -13,6 +13,8 @@ import {
   Clock,
   Loader2,
   Sparkles,
+  UserPlus,
+  TrendingDown,
 } from "lucide-react";
 import {
   useProposalInfo,
@@ -29,6 +31,8 @@ interface ProposalListProps {
   vaultAddress: Address;
   proposalCount: number;
   requiredVotes: number;
+  totalMembers?: number;
+  onProposalExecuted?: () => void;
 }
 
 interface ProposalData {
@@ -47,24 +51,39 @@ function ProposalItem({
   vaultAddress,
   proposalId,
   requiredVotes,
+  totalMembers = requiredVotes,
   filter,
+  onProposalExecuted,
 }: {
   vaultAddress: Address;
   proposalId: number;
   requiredVotes: number;
+  totalMembers?: number;
   filter: ProposalFilter;
+  onProposalExecuted?: () => void;
 }) {
   const { address: userAddress } = useAccount();
   const ethPrice = useEthPrice();
+  const [hasVotedOptimistic, setHasVotedOptimistic] = useState(false);
   const {
     data: proposalData,
     isLoading,
-    refetch,
+    refetch: refetchProposal,
   } = useProposalInfo(vaultAddress, proposalId);
-  const { data: hasVoted } = useHasVoted(vaultAddress, proposalId, userAddress);
+  const { data: hasVoted, refetch: refetchHasVoted } = useHasVoted(
+    vaultAddress,
+    proposalId,
+    userAddress
+  );
   const { vote, isPending, isConfirming, isSuccess, error } =
     useVoteOnProposal();
   const isVoting = isPending || isConfirming;
+
+  // Track previous status to detect when proposal gets executed
+  const [prevStatus, setPrevStatus] = useState<number | null>(null);
+
+  // Usar el estado optimista si está disponible, sino usar los datos del blockchain
+  const userHasVoted = hasVotedOptimistic || hasVoted;
 
   // Manejar estados de votación
   useEffect(() => {
@@ -82,9 +101,18 @@ function ProposalItem({
         id: `vote-${proposalId}`,
         description: "Tu voto ha sido contabilizado",
       });
-      refetch(); // Refrescar datos de la propuesta
+      setHasVotedOptimistic(true); // Actualizar inmediatamente la UI
+      refetchProposal(); // Refrescar datos en background
+      refetchHasVoted(); // Refrescar confirmación en background
     }
-  }, [isPending, isConfirming, isSuccess, proposalId, refetch]);
+  }, [
+    isPending,
+    isConfirming,
+    isSuccess,
+    proposalId,
+    refetchProposal,
+    refetchHasVoted,
+  ]);
 
   // Manejar errores por separado
   useEffect(() => {
@@ -107,6 +135,27 @@ function ProposalItem({
     }
   }, [error, proposalId]);
 
+  // Detect when proposal gets executed and trigger callback
+  useEffect(() => {
+    if (proposalData) {
+      const currentStatus = proposalData[9]; // status is at index 9
+      const currentType = proposalData[1]; // proposalType is at index 1
+
+      // If proposal just got executed (changed from PENDING to EXECUTED)
+      if (
+        prevStatus === ProposalStatus.PENDING &&
+        currentStatus === ProposalStatus.EXECUTED &&
+        currentType === 1 && // ADD_MEMBER type
+        onProposalExecuted
+      ) {
+        // Call the callback to refresh wallet data (members list, etc.)
+        onProposalExecuted();
+      }
+
+      setPrevStatus(currentStatus);
+    }
+  }, [proposalData, prevStatus, onProposalExecuted]);
+
   if (isLoading || !proposalData) {
     return (
       <Card className="border-0 bg-white/80 backdrop-blur-xl shadow-lg rounded-3xl">
@@ -126,7 +175,7 @@ function ProposalItem({
     description,
     recipient,
     amount,
-    ,
+    newMember,
     votesFor,
     votesAgainst,
     status,
@@ -185,6 +234,18 @@ function ProposalItem({
                 <h3 className="text-xl font-bold text-gray-900">
                   Propuesta #{Number(id)}
                 </h3>
+                {proposalType === 0 && (
+                  <Badge className="bg-gradient-to-r from-blue-400 to-blue-600 text-white border-0 shadow-lg px-3 py-1 flex items-center gap-1">
+                    <TrendingDown className="w-3 h-3" />
+                    Retiro
+                  </Badge>
+                )}
+                {proposalType === 1 && (
+                  <Badge className="bg-gradient-to-r from-purple-400 to-pink-600 text-white border-0 shadow-lg px-3 py-1 flex items-center gap-1">
+                    <UserPlus className="w-3 h-3" />
+                    Nuevo Miembro
+                  </Badge>
+                )}
                 {isApproved && (
                   <Badge className="bg-gradient-to-r from-green-400 to-emerald-500 text-white border-0 shadow-lg px-3 py-1">
                     <CheckCircle className="w-4 h-4 mr-1" />
@@ -206,25 +267,45 @@ function ProposalItem({
               </div>
               <p className="text-gray-600 mb-4">{description}</p>
 
-              {/* Details */}
+              {/* Details - Different by proposal type */}
               <div className="flex flex-wrap items-center gap-4">
-                <div className="px-4 py-2 bg-white/60 backdrop-blur-sm rounded-xl border border-white/50">
-                  <span className="text-sm text-gray-500">Monto: </span>
-                  <span className="text-lg font-bold bg-gradient-to-r from-blue-600 to-emerald-600 bg-clip-text text-transparent">
-                    ${formatEthToUSD(amountInEth, ethPrice)}
-                  </span>
-                  <span className="text-xs text-gray-400 ml-2">
-                    ({parseFloat(amountInEth).toFixed(4)} ETH)
-                  </span>
-                </div>
-                <div className="px-4 py-2 bg-white/60 backdrop-blur-sm rounded-xl border border-white/50 flex items-center gap-1">
-                  <span className="text-sm text-gray-500">Para: </span>
-                  <CopyableAddress
-                    address={recipient}
-                    showFull={false}
-                    className="text-gray-900 text-sm"
-                  />
-                </div>
+                {proposalType === 0 ? (
+                  // Propuesta de retiro
+                  <>
+                    <div className="px-4 py-2 bg-white/60 backdrop-blur-sm rounded-xl border border-white/50">
+                      <span className="text-sm text-gray-500">Monto: </span>
+                      <span className="text-lg font-bold bg-gradient-to-r from-blue-600 to-emerald-600 bg-clip-text text-transparent">
+                        ${formatEthToUSD(amountInEth, ethPrice)}
+                      </span>
+                      <span className="text-xs text-gray-400 ml-2">
+                        ({parseFloat(amountInEth).toFixed(4)} ETH)
+                      </span>
+                    </div>
+                    <div className="px-4 py-2 bg-white/60 backdrop-blur-sm rounded-xl border border-white/50 flex items-center gap-1">
+                      <span className="text-sm text-gray-500">
+                        Destinatario:{" "}
+                      </span>
+                      <CopyableAddress
+                        address={recipient}
+                        showFull={false}
+                        className="text-gray-900 text-sm"
+                      />
+                    </div>
+                  </>
+                ) : (
+                  // Propuesta de nuevo miembro
+                  <div className="px-4 py-2 bg-gradient-to-r from-purple-100 to-pink-100 backdrop-blur-sm rounded-xl border border-purple-200 flex items-center gap-2">
+                    <UserPlus className="w-4 h-4 text-purple-600" />
+                    <span className="text-sm text-gray-600">
+                      Nuevo miembro:{" "}
+                      <CopyableAddress
+                        address={newMember}
+                        showFull={false}
+                        className="text-purple-700 font-semibold"
+                      />
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -251,27 +332,39 @@ function ProposalItem({
               />
             </div>
 
-            {/* Vote indicators */}
+            {/* Vote indicators - Show progress relative to total members */}
             <div className="flex gap-2 mt-3">
-              {Array.from({ length: requiredVotes }).map((_, i) => (
-                <div
-                  key={i}
-                  className={`flex-1 h-2 rounded-full transition-all ${
-                    i < votesForNum
-                      ? isApproved
-                        ? "bg-gradient-to-r from-green-400 to-emerald-500 shadow-lg"
-                        : "bg-gradient-to-r from-blue-500 to-cyan-500 shadow-lg"
-                      : "bg-gray-200"
-                  }`}
-                />
-              ))}
+              {Array.from({ length: totalMembers }).map((_, i) => {
+                const votesAgainstNum = Number(votesAgainst);
+                const isFor = i < votesForNum;
+                const isAgainst =
+                  i >= votesForNum && i < votesForNum + votesAgainstNum;
+
+                return (
+                  <div
+                    key={i}
+                    className={`flex-1 h-2 rounded-full transition-all ${
+                      isFor
+                        ? isApproved
+                          ? "bg-gradient-to-r from-green-400 to-emerald-500 shadow-lg"
+                          : "bg-gradient-to-r from-blue-500 to-cyan-500 shadow-lg"
+                        : isAgainst
+                        ? "shadow-lg"
+                        : "bg-gray-200"
+                    }`}
+                    style={
+                      isAgainst ? { backgroundColor: "#ef4444" } : undefined
+                    }
+                  />
+                );
+              })}
             </div>
           </div>
 
           {/* Voting Buttons */}
           {isActive && (
             <div className="flex gap-4">
-              {!hasVoted ? (
+              {!userHasVoted ? (
                 <>
                   <Button
                     onClick={() => handleVote(true)}
@@ -327,6 +420,8 @@ export function ProposalList({
   vaultAddress,
   proposalCount,
   requiredVotes,
+  totalMembers,
+  onProposalExecuted,
 }: ProposalListProps) {
   const [filter, setFilter] = useState<ProposalFilter>("pending");
 
@@ -353,7 +448,9 @@ export function ProposalList({
         vaultAddress={vaultAddress}
         proposalId={proposalId}
         requiredVotes={requiredVotes}
+        totalMembers={totalMembers}
         filter={filter}
+        onProposalExecuted={onProposalExecuted}
       />
     )
   );

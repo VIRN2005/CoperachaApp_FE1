@@ -1,6 +1,7 @@
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
 import "dotenv/config";
+import "@tenderly/hardhat-tenderly";
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -85,12 +86,23 @@ const config: HardhatUserConfig = {
       accounts: process.env.PRIVATE_KEY && process.env.PRIVATE_KEY.length === 66 ? [process.env.PRIVATE_KEY] : [],
       chainId: 80002,
     },
+
+    // Tenderly Virtual Testnet
+    virtual_mainnet: {
+      url: process.env.TENDERLY_RPC_URL || "https://virtual.mainnet.eu.rpc.tenderly.co/90ce4a22-5494-4568-8d4b-a1530aff5790",
+      accounts: process.env.PRIVATE_KEY && process.env.PRIVATE_KEY.length === 66 ? [process.env.PRIVATE_KEY] : [],
+      chainId: 73571,
+    },
   },
   paths: {
     sources: "./contracts",
     tests: "./test",
     cache: "./cache",
     artifacts: "./artifacts",
+  },
+  tenderly: {
+    project: process.env.TENDERLY_PROJECT || "project",
+    username: process.env.TENDERLY_USERNAME || "OlirahetaX",
   },
 };
 

@@ -21,6 +21,10 @@ declare module "hardhat/types/runtime" {
       name: "CoperachaWallet",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.CoperachaWallet__factory>;
+    getContractFactory(
+      name: "ICoperachaFactory",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.ICoperachaFactory__factory>;
 
     getContractAt(
       name: "CoperachaFactory",
@@ -32,6 +36,11 @@ declare module "hardhat/types/runtime" {
       address: string | ethers.Addressable,
       signer?: ethers.Signer
     ): Promise<Contracts.CoperachaWallet>;
+    getContractAt(
+      name: "ICoperachaFactory",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.ICoperachaFactory>;
 
     deployContract(
       name: "CoperachaFactory",
@@ -41,6 +50,10 @@ declare module "hardhat/types/runtime" {
       name: "CoperachaWallet",
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.CoperachaWallet>;
+    deployContract(
+      name: "ICoperachaFactory",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.ICoperachaFactory>;
 
     deployContract(
       name: "CoperachaFactory",
@@ -52,6 +65,11 @@ declare module "hardhat/types/runtime" {
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.CoperachaWallet>;
+    deployContract(
+      name: "ICoperachaFactory",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.ICoperachaFactory>;
 
     // default types
     getContractFactory(
